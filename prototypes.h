@@ -39,6 +39,9 @@ int intrnd (int max);
 void addscore (int num);
 void drawspeedrect (void);
 void checkspeedadjust (void);
+void loadprefs(char * directory, char * filename);
+void saveprefs(char * directory, char * filename);
+void setmaintitlebar (void);
 
 void movescroller (int n);
 void movediver (int n);

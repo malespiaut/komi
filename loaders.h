@@ -69,7 +69,7 @@ void loadsprites (void)
    loadsprite(&bolts_title, filepath, "titles_bolts.bmp", 152, 24, 0, 0, 0, 0, 0, 0);
    loadsprite(&start_title, filepath, "titles_start.bmp", 240, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&quit_title, filepath, "titles_quit.bmp", 96, 48, 0, 0, 0, 0, 0, 0);
-   loadsprite(&gpl_title, filepath, "titles_gpl.bmp", 480, 56, 0, 0, 0, 0, 0, 0);
+   loadsprite(&gpl_title, filepath, "titles_gpl.bmp", 480, 112, 0, 0, 0, 0, 0, 0);
    loadsprite(&speed_title, filepath, "titles_speed.bmp", 136, 48, 0, 0, 0, 0, 0, 0);
    
    return;
@@ -91,6 +91,7 @@ void loadsounds (void)
    loadsound(&laser_sound, filepath, "sounds_laser.wav");
    loadsound(&laserentry_sound, filepath, "sounds_laserentry.wav");
    loadsound(&laserpowerup_sound, filepath, "sounds_laserpowerup.wav");
+   loadsound(&lastlife_sound, filepath, "sounds_lastlife.wav");
    loadsound(&lightningwarning_sound, filepath, "sounds_lightningwarning.wav");
    loadsound(&pause_sound, filepath, "sounds_pause.wav");
    loadsound(&powerup_sound, filepath, "sounds_powerup.wav");

@@ -1,3 +1,25 @@
+From 0.8b to 0.9b
+-----------------
+
+Increased sound buffer size from 512 to 2048 - may prevent scratching observed on Windows.
+
+Fixed a few possible buffer overflows introduced by sprintf() and strcat(). Thanks to Steve Kemp.
+
+More complete acknowledgements in the title screen.
+
+Level 7 was too hard - reduced enemies by 1. Still hard, but doable with a bit of patience.
+
+Now save the speed setting in "prefs".
+
+Man page by Steve Kemp.
+
+Give audio warning of last life in fullscreen mode (since you can't see the display). Thanks to Amy Beeston.
+
+Save highscore in "prefs".
+
+Save prefs version in "prefs".
+
+
 From 0.7b to 0.8b
 -----------------
 

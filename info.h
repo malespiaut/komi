@@ -38,6 +38,7 @@ Komi options:\n\
      --nosound\n\
      --nostars          (turn the starfield off)\n\
      --path directory/  (directory of data files)\n\
+     --resetprefs       (reset prefs and high score)\n\
 \n\
   Information:\n\
      --copying          (Komi is under the GNU GPL)\n\

@@ -1,4 +1,4 @@
-Komi 0.8b Readme
+Komi 0.9b Readme
 ----------------
 
 Komi is a 2D arcade game written in C, which uses the SDL library for graphics and sound. Komi is released under the GNU General Public License (see COPYING.txt for details).

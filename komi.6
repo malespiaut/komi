@@ -1,0 +1,91 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH KOMI 6 "June 15, 2004"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+komi \- A simple game for one player.
+.SH SYNOPSIS
+.B komi
+.RI [ options ] 
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B komi
+game.
+
+.SH PLAYING
+Using the left and right arrow keys you may guide Komi the space frog from left to right across the bottom of the screen.
+Use the space bar to extend his long tongue and capture the floating orange prizes, whilst avoiding the predators.
+
+.SH OPTIONS
+The following command line options are supported:
+
+.TP
+\fB\-\-delay <x>\fR
+Wait for x milliseconds between frames, so lower is faster.
+
+.TP
+\fB\-\-fastdraw\fR
+Use a faster drawing method. Forces starfield to be off.
+
+.TP
+\fB\-\-fullscreen\fR
+Run the game in fullscreen mode, rather than in a window of its own.
+
+.TP
+\fB\-\-hog\fR
+Allow 
+.B komi
+to hog CPU which may reduce jerkiness.
+
+.TP
+\fB\-\-nosound\fR
+.Sp
+Disable all sound effects.
+
+.TP
+\fB\-\-nostars\fR
+Disable the starfield simulation in the background of the game.
+
+.TP
+\fB\-\-resetprefs\fR
+Reset preferences file (which includes the high score).
+
+.TP
+\fB\-\-copying\fR
+Show the terms under which
+.B komi
+may be copied.
+
+.TP
+\fB\-\-help\fR
+Display the command line options.
+
+.TP
+\fB\-\-version\fR
+Show the version number of 
+.B komi
+
+.SH WEBSITE
+The game has a website where you can find updates and source code. See the following URL for details:
+.TP
+	http://komi.sourceforge.net/
+
+.SH AUTHOR
+This manual page was written by Steve Kemp <steve@steve.org.uk>,
+for the Debian project (but may be used by others).
+.B komi
+was written by Allan Crossman <acrossman@users.sourceforge.net>.

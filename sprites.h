@@ -137,11 +137,19 @@ void clearsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int ce
 //
 // FIXME: Currently only files with sizes a multiple of 4 will work, due to that silly BMP redundancy thing.
 
-void loadsprite (struct sprite_struct * thesprite, char * directory, char * filename, int width, int height, int hider, int hideb, int hideg, int nocollider, int nocollideg, int nocollideb){
+void loadsprite (struct sprite_struct * thesprite, char * directory, char * filename, int width, int height, int hider, int hideb, int hideg, int nocollider, int nocollideg, int nocollideb) {
+
    FILE * infile;
    int x, y;
-   char fullpath[256];
+   char fullpath[1024];
    
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Fatal error while loading %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      cleanexit(1);
+   }
    strcpy(fullpath, directory);
    strcat(fullpath, filename);
    

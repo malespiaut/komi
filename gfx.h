@@ -1,4 +1,4 @@
-// gfx_sdl.h -- some drawing routines for SDL
+// gfx.h -- some drawing routines for SDL
 
 /* 
     This program is free software; you can redistribute it and/or

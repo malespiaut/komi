@@ -3,7 +3,8 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "0.8b"
+#define VERSION "0.9b"
+#define PREFSVERSION 1    // Increment this if prefs format changes.
 
 // Window size.
 #define WIDTH 640
@@ -120,15 +121,15 @@
 #define MAINTITLE_X 320
 #define MAINTITLE_Y 60
 #define GPL_X 320
-#define GPL_Y 145
+#define GPL_Y 175
 #define BOLTSTITLE_X 300
-#define BOLTSTITLE_Y 270
+#define BOLTSTITLE_Y 315
 #define DIAMONDTITLE_X 340
-#define DIAMONDTITLE_Y 240
+#define DIAMONDTITLE_Y 285
 #define KOMITITLE_X 270
-#define KOMITITLE_Y 315
+#define KOMITITLE_Y 360
 #define DIVERTITLE_X 250
-#define DIVERTITLE_Y 225
+#define DIVERTITLE_Y 270
 #define QUITBUTTON_X 585
 #define QUITBUTTON_Y 380
 #define STARTBUTTON_X 520
@@ -163,6 +164,8 @@
 // How many rectanges to keep track of if doing fast drawing, where only
 // updated rectanges are redrawn.
 #define MAXRECTS 200
+
+#define TEXTBUFFERSIZE 1024
 
 /* -------------------------------------------------------------------------- */
 // Structure definitions...
@@ -264,6 +267,8 @@ int algorithmicenemies = 0;
 int fullscreen = 0;
 int fastdraw = 0;
 
+int gotdelayarg = 0;    // Flag raised if "--delay" is used; prevents delay being read from prefs file.
+
 // Position of Komi.
 int komix;
 int komiy;
@@ -286,9 +291,12 @@ int lightningcheck;     // Should merge this into levelinfo structure. Move ligh
 
 int tick;               // Current frame number.
 int score;              // Current score.
+unsigned int highscore = 0;    // Highest score achieved.
 
 int resetmoney;         // Flag for whether to remake money at level start.
                         // Will be Yes if this is a new level, No if we're replaying one we died in.
+
+int givelastlifewarning = 0;    // Whether to give a warning upon next start of level due to last life (if in fullscreen mode)
 
 // Now make all the relevant structures declared above.
 
@@ -363,6 +371,7 @@ Mix_Chunk * gameover_sound = NULL;
 Mix_Chunk * laser_sound = NULL;
 Mix_Chunk * laserentry_sound = NULL;
 Mix_Chunk * laserpowerup_sound = NULL;
+Mix_Chunk * lastlife_sound = NULL;
 Mix_Chunk * lightningwarning_sound = NULL;
 Mix_Chunk * oneup_sound = NULL;
 Mix_Chunk * pause_sound = NULL;
@@ -373,9 +382,9 @@ Mix_Chunk * unfreezewarning_sound = NULL;
 
 // Path to the data (sound files, graphics, etc). 
 #ifdef DATAPATH
-char filepath[256] = DATAPATH;
+char filepath[TEXTBUFFERSIZE] = DATAPATH;
 #else
-char filepath[256] = "komidata/"
+char filepath[TEXTBUFFERSIZE] = "komidata/"
 #endif
 
 

@@ -65,12 +65,18 @@ int main (int argc, char * argv[]) {
    {
       if (strcmp(argv[n], "--delay") == 0 && n < argc - 1)
       {
+         gotdelayarg = 1;
          delay = atoi(argv[n + 1]);
          if (delay < 0 || delay > 50)
          {
             delay = DEFAULT_DELAY;
+            gotdelayarg = 0;
             fprintf(stderr, "Please enter a delay value between 0 and 50.\n");
          }
+      }
+      if (strcmp(argv[n], "--resetprefs") == 0)
+      {
+         saveprefs(filepath, "prefs");
       }
       if (strcmp(argv[n], "--nostars") == 0)
       {
@@ -122,7 +128,13 @@ int main (int argc, char * argv[]) {
       }
       if (strcmp(argv[n], "--path") == 0 && n < argc - 1)
       {
-         sprintf(filepath, "%s", argv[n + 1]);
+         if (strlen(argv[n + 1]) < sizeof(filepath))   // Check for buffer overrun...
+         {
+            sprintf(filepath, "%s", argv[n + 1]);
+         } else {
+            fprintf(stderr, "Directory name given is too long, attempting to use default,\n");
+            fprintf(stderr, "which is: %s\n", filepath);
+         }
          if (filepath[strlen(filepath) - 1] != '/')
          {
             fprintf(stderr, "Warning: Directory name given did not end with a '/'\n");
@@ -130,6 +142,9 @@ int main (int argc, char * argv[]) {
          }
       }
    }
+   
+   loadprefs(filepath, "prefs");
+   saveprefs(filepath, "prefs");    // In case of command line arguments needing to be saved.
    
    if (nosound == 0)
    {
@@ -148,7 +163,7 @@ int main (int argc, char * argv[]) {
    
    if (nosound == 0)
    {
-      if (Mix_OpenAudio(44100, AUDIO_S16, 2, 512))
+      if (Mix_OpenAudio(44100, AUDIO_S16, 2, 2048))
       {
          fprintf(stderr, "Unable to open audio. %s\n", SDL_GetError());
          nosound = 1;
@@ -160,7 +175,7 @@ int main (int argc, char * argv[]) {
    if (fullscreen == 0)
    {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT);
-      SDL_WM_SetCaption("Komi " VERSION, NULL);
+      setmaintitlebar();
    } else {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT | SDL_FULLSCREEN);
    }
@@ -203,7 +218,12 @@ void menu (void)
             SDL_ShowCursor(SDL_DISABLE);
             game();
             SDL_ShowCursor(SDL_ENABLE);
-            SDL_WM_SetCaption("Komi " VERSION, NULL);
+            if (score > highscore)
+            {
+               highscore = score;
+               saveprefs(filepath, "prefs");
+            }
+            setmaintitlebar();
             drawmenu();
          } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.width / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.height / 2) {
             cleanexit(0);
@@ -239,11 +259,15 @@ void game (void)
       case DEATH :
          lives--;
          fastretract = 0;    // Currently the only thing that needs to be reset here.
+         resetmoney = 0;
          if (lives < 1)
          {
             gameoverflag = 1;
          }
-         resetmoney = 0;
+         if (lives == 1)
+         {
+            givelastlifewarning = 1;
+         }
          break;
       case QUIT :
          gameoverflag = 1;
@@ -297,6 +321,12 @@ int playlevel (void)
    cls(virtue, 0, 0, 0);
    SDL_Flip(virtue);
    updatetitlebar();
+   
+   if (lives == 1 && givelastlifewarning && fullscreen)
+   {
+      playsound(lastlife_sound);
+      givelastlifewarning = 0;
+   }
    
    for (n = 0; n < MAX_ENEMIES; n++)
    {
@@ -1677,7 +1707,7 @@ void choosenumbers (void)
             levelinfo.enemycount[BROWNIAN] = 4;
             break;
          case 7 :
-            levelinfo.enemycount[ROAMER] = 8;
+            levelinfo.enemycount[ROAMER] = 7;
             levelinfo.enemycount[DIVER] = 1;
             levelinfo.roamermaxspeed = 3;
                coins = 6;
@@ -1950,7 +1980,7 @@ Uses intvar to store tick (frame) it last fired in. Used so that there's
 a delay between shots.
 
 ELECTRA:
-Uses intvar to store the enemy-number of it's target Electra.
+Uses intvar to store the enemy-number of its target Electra.
 
 LASERGUN:
 Uses intvar to store what tick it should fire its laser.
@@ -2436,10 +2466,17 @@ void cleanexit (int exitstatus)    // Exit cleanly, shutting down SDL.
 
 void loadsound(Mix_Chunk ** thesound, char * directory, char * filename)
 {
-   char fullpath[256];
+   char fullpath[TEXTBUFFERSIZE];
    
    FILE * testopen;
 
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Fatal error while loading %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      cleanexit(1);
+   }
    strcpy(fullpath, directory);
    strcat(fullpath, filename);
 
@@ -2538,6 +2575,7 @@ void checkspeedadjust (void)
       delay = LONGESTDELAY - ((mousemap.clickx - leftx) / ((float)SPEEDRECTWIDTH / LONGESTDELAY));
       if (delay < 0) delay = 0;
       if (delay > LONGESTDELAY) delay = LONGESTDELAY;
+      saveprefs(filepath, "prefs");
       drawspeedrect();
       SDL_Flip(virtue);
    }
@@ -2834,7 +2872,7 @@ void fadeout (void)    // Not so much a fade as a series of black lines...
 
 void updatetitlebar (void)
 {
-   char thestring[256];
+   char thestring[TEXTBUFFERSIZE];
    
    sprintf(thestring, "Komi  -  Level: %d  -  Score: %d  -  Lives: %d", level, score, lives);
    SDL_WM_SetCaption(thestring, NULL);
@@ -2845,8 +2883,15 @@ void updatetitlebar (void)
 
 void screenshot (SDL_Surface * surface, char * directory, char * filename)
 {
-   char fullpath[256];
+   char fullpath[TEXTBUFFERSIZE];
 
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Error while saving %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      return;
+   }
    strcpy(fullpath, directory);
    strcat(fullpath, filename);
    
@@ -3201,5 +3246,113 @@ void addscore (int num)    // Also checks if we're over the points required to g
       playsound(oneup_sound);
    }
    updatetitlebar();
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void saveprefs(char * directory, char * filename)
+{
+   char fullpath[TEXTBUFFERSIZE];
+
+   FILE * outfile;
+   
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Error while saving %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      return;
+   }
+   strcpy(fullpath, directory);
+   strcat(fullpath, filename);
+   
+   if ((outfile = fopen(fullpath, "wb")) == NULL)
+   {
+      fprintf(stderr, "Failed to open prefs file %s\n", fullpath);
+      return;
+   } else {
+      putc(PREFSVERSION, outfile);                    // Save preferences version (for check at load)
+      putc(delay, outfile);                           // Save delay.
+      putc(highscore & 0x000000FF, outfile);          // Save highscore...
+      putc((highscore & 0x0000FF00) >> 8, outfile);
+      putc((highscore & 0x00FF0000) >> 16, outfile);
+      putc((highscore & 0xFF000000) >> 24, outfile);
+      fclose(outfile);
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void loadprefs(char * directory, char * filename)
+{
+   char fullpath[TEXTBUFFERSIZE];
+
+   FILE * infile;
+   int nextchar;
+
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Error while loading %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      return;
+   }
+   strcpy(fullpath, directory);
+   strcat(fullpath, filename);
+   
+   if ((infile = fopen(fullpath, "rb")) == NULL)
+   {
+      fprintf(stderr, "Failed to open prefs file %s\n", fullpath);
+      fprintf(stderr, "Attempting to write defaults to it...\n");
+      saveprefs(directory, filename);                                     // If we fail, try to save / create the file instead.
+      return;
+   } else {
+   
+      if ((nextchar = getc(infile)) != EOF)
+      {
+         if (nextchar != PREFSVERSION)                 // Check that preferences are of the current type.
+         {
+            fprintf(stderr, "Preferences file appears to be in wrong format,\n");
+            fprintf(stderr, "so attempting to write defaults to it...\n");
+            fclose(infile);
+            saveprefs(directory, filename);
+            return;
+         }
+      }
+      
+      if ((nextchar = getc(infile)) != EOF)
+      {
+         if (nextchar >= 0 && nextchar <= 50 && gotdelayarg == 0)         // Check for sane delay values and gotdelayarg flag.
+         {
+            delay = nextchar;
+         }
+      }
+      
+      if ((nextchar = getc(infile)) != EOF)                // Read highscore in byte by byte.
+         highscore = nextchar;
+      if ((nextchar = getc(infile)) != EOF)
+         highscore += nextchar << 8;
+      if ((nextchar = getc(infile)) != EOF)
+         highscore += nextchar << 16;
+      if ((nextchar = getc(infile)) != EOF)
+         highscore += nextchar << 24;
+
+      fclose(infile);
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void setmaintitlebar (void)
+{
+   char thestring[TEXTBUFFERSIZE];
+   
+   sprintf(thestring, "Komi %s  -  Highscore: %d", VERSION, highscore);
+   SDL_WM_SetCaption(thestring, NULL);
    return;
 }
