@@ -80,6 +80,10 @@ void loadsprites (void)
    loadsprite(&quit2_title, filepath, "titles_quit2.bmp", 96, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&gpl_title, filepath, "titles_gpl.bmp", 480, 112, 0, 0, 0, 0, 0, 0);
    loadsprite(&speed_title, filepath, "titles_speed.bmp", 136, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&shuffleoff_title, filepath, "titles_shuffleoff.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&shuffleoff2_title, filepath, "titles_shuffleoff2.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&shuffleon_title, filepath, "titles_shuffleon.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&shuffleon2_title, filepath, "titles_shuffleon2.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
    
    return;
 }

@@ -91,7 +91,7 @@ void drawsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int cen
       updaterectsarray(leftx, topy, thesprite->pixelmap->w, thesprite->pixelmap->h);
    }
 
-   SDL_BlitSurface(thesprite->pixelmap, &srcrect, virtue, &destrect);
+   SDL_BlitSurface(thesprite->pixelmap, &srcrect, screen, &destrect);
 
    return;
 }

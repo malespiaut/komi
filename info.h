@@ -33,16 +33,15 @@ Komi options:\n\
 \n\
   Technical options:\n\
      --fastdraw         (fast drawing method for slow PCs)\n\
-     --fullscreen\n\
-     --nosound\n\
+     --fullscreen       (use whole screen instead of window)\n\
+     --nosound          (don't use any sounds)\n\
      --nostars          (turn the starfield off)\n\
      --resetprefs       (reset prefs and high score)\n\
-     --shuffle          (shuffle levels randomly)\n\
 \n\
   Information:\n\
      --copying          (Komi is under the GNU GPL)\n\
-     --help\n\
-     --version\n\
+     --help             (show this message)\n\
+     --version          (show game version)\n\
 \n\
   To play:\n\
      Move Komi with arrow keys, or KP4 and KP6.\n\

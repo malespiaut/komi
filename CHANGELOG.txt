@@ -1,3 +1,10 @@
+From 1.01 to 1.02
+-----------------
+
+* Fix a couple of syntax errors that showed up on Mac OS 9 in MPW.
+* Remove --shuffle command line option in favour of clickable button in menu.
+* Save shuffle choice to ~/.komirc
+
 From 1.0 to 1.01
 ----------------
 

@@ -18,7 +18,7 @@ int lightningdeath (void);
 void cleanexit (int exitstatus);
 void loadsound (Mix_Chunk ** thesound, char * directory, char * filename);
 void playsound (Mix_Chunk * thesound);
-void drawmenu (int highlight_start, int highlight_quit);
+void drawmenu (int highlight_start, int highlight_quit, int highlight_shuffle);
 void updatekeymap (void);
 void updatemousemap (void);
 void manageevents (void);

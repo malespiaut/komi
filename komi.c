@@ -110,10 +110,6 @@ int main (int argc, char * argv[]) {
       {
          hog = 1;
       }
-      if (strcmp(argv[n], "--shuffle") == 0)
-      {
-         shuffle = 1;
-      }
       if (strcmp(argv[n], "--algorithmic") == 0)
       {
          algorithmicenemies = 1;
@@ -222,8 +218,9 @@ void menu (void)
 {
    int highlight_start = 0;
    int highlight_quit = 0;
+   int highlight_shuffle = 0;
 
-   drawmenu(highlight_start, highlight_quit);
+   drawmenu(highlight_start, highlight_quit, highlight_shuffle);
    
    while (1)
    {
@@ -238,13 +235,13 @@ void menu (void)
          if (highlight_start == 0)
          {
             highlight_start = 1;
-            drawmenu(highlight_start, highlight_quit);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          }
       } else {
-         if (highlight_start == 1)
+         if (highlight_start)
          {
             highlight_start = 0;
-            drawmenu(highlight_start, highlight_quit);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          }
       }
 
@@ -254,13 +251,29 @@ void menu (void)
          if (highlight_quit == 0)
          {
             highlight_quit = 1;
-            drawmenu(highlight_start, highlight_quit);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          }
       } else {
-         if (highlight_quit == 1)
+         if (highlight_quit)
          {
             highlight_quit = 0;
-            drawmenu(highlight_start, highlight_quit);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
+         }
+      }
+
+      // Highlight the shuffle control, if necessary...
+      if (abs(mousemap.currentx - SHUFFLETITLE_X) < shuffleon_title.pixelmap->w / 2 && abs(mousemap.currenty - SHUFFLETITLE_Y) < shuffleon_title.pixelmap->h / 2)
+      {
+         if (highlight_shuffle == 0)
+         {
+            highlight_shuffle = 1;
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
+         }
+      } else {
+         if (highlight_shuffle)
+         {
+            highlight_shuffle = 0;
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          }
       }
       
@@ -276,9 +289,18 @@ void menu (void)
             game();
             SDL_ShowCursor(SDL_ENABLE);
             setmaintitlebar();
-            drawmenu(highlight_start, highlight_quit);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.pixelmap->w / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.pixelmap->h / 2) {
             cleanexit(0);
+         } else if (abs(mousemap.clickx - SHUFFLETITLE_X) < shuffleon_title.pixelmap->w / 2 && abs(mousemap.clicky - SHUFFLETITLE_Y) < shuffleon_title.pixelmap->h / 2) {
+            if (shuffle)
+            {
+               shuffle = 0;
+            } else {
+               shuffle = 1;
+            }
+            saveprefs(prefsdir, PREFSNAME);
+            drawmenu(highlight_start, highlight_quit, highlight_shuffle);
          } else {
             checkspeedadjust();
          }
@@ -2808,8 +2830,11 @@ void playsound (Mix_Chunk * thesound)   // Pass sound pointer to Mix_PlayChannel
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void drawmenu (int highlight_start, int highlight_quit)    // Draw all the graphical stuff on the title screen. Locations predefined.
-                                                           // Highlight the buttons if so flagged.
+void drawmenu (int highlight_start, int highlight_quit, int highlight_shuffle)
+
+// Draw all the graphical stuff on the title screen. Locations predefined.
+// Highlight the buttons if so flagged.
+
 {
    rects = 0;   // In case drawing all this would push rects over the max.
 
@@ -2829,6 +2854,17 @@ void drawmenu (int highlight_start, int highlight_quit)    // Draw all the graph
       drawsprite(&quit_title, virtue, QUITBUTTON_X, QUITBUTTON_Y);
    } else {
       drawsprite(&quit2_title, virtue, QUITBUTTON_X, QUITBUTTON_Y);
+   }
+
+   if (highlight_shuffle == 0 && shuffle == 0)
+   {
+      drawsprite(&shuffleoff_title, virtue, SHUFFLETITLE_X, SHUFFLETITLE_Y);
+   } else if (highlight_shuffle == 0 && shuffle) {
+      drawsprite(&shuffleon_title, virtue, SHUFFLETITLE_X, SHUFFLETITLE_Y);
+   } else if (highlight_shuffle && shuffle == 0) {
+      drawsprite(&shuffleoff2_title, virtue, SHUFFLETITLE_X, SHUFFLETITLE_Y);
+   } else {
+      drawsprite(&shuffleon2_title, virtue, SHUFFLETITLE_X, SHUFFLETITLE_Y);
    }
    
    drawsprite(&bolts_title, virtue, BOLTSTITLE_X, BOLTSTITLE_Y);
@@ -2850,9 +2886,9 @@ void drawmenu (int highlight_start, int highlight_quit)    // Draw all the graph
 
 void drawspeedrect (void)   // The rect showing the speed at the bottom left of the menu.
 {
-   rects = 0;   // In case drawing this would push rects over the max.
-
    int fillx1, fillx2, filly1, filly2;
+   
+   rects = 0;   // In case drawing this would push rects over the max.
    
    // Clear it first...
    frect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 150, 150, 150);
@@ -3648,6 +3684,7 @@ void saveprefs (char * directory, char * filename)
       putc((highscore & 0x0000FF00) >> 8, outfile);
       putc((highscore & 0x00FF0000) >> 16, outfile);
       putc((highscore & 0xFF000000) >> 24, outfile);
+      putc(shuffle, outfile);                         // Save shuffle on/off
       fclose(outfile);
    }
    
@@ -3675,12 +3712,14 @@ void loadprefs (char * directory, char * filename)
    
    if ((infile = fopen(fullpath, "rb")) == NULL)
    {
+
       fprintf(stderr, "Failed to open prefs file %s for load.\n", fullpath);
       fprintf(stderr, "Attempting to write defaults to it...\n");
       saveprefs(directory, filename);                                     // If we fail, try to save / create the file instead.
       return;
+
    } else {
-   
+
       if ((nextchar = getc(infile)) != EOF)
       {
          if (nextchar != PREFSVERSION)                 // Check that preferences are of the current type.
@@ -3709,6 +3748,11 @@ void loadprefs (char * directory, char * filename)
          highscore += nextchar << 16;
       if ((nextchar = getc(infile)) != EOF)
          highscore += nextchar << 24;
+      
+      if ((nextchar = getc(infile)) != EOF)
+      {
+         shuffle = nextchar;
+      }
 
       fclose(infile);
    }

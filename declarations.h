@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "1.01"
+#define VERSION "1.02"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
 #define PREFSNAME ".komirc"
 
@@ -132,13 +132,13 @@
 #define MAINTITLE_Y 60
 #define GPL_X 320
 #define GPL_Y 175
-#define BOLTSTITLE_X 300
+#define BOLTSTITLE_X 370
 #define BOLTSTITLE_Y 325
-#define DIAMONDTITLE_X 340
+#define DIAMONDTITLE_X 410
 #define DIAMONDTITLE_Y 295
-#define KOMITITLE_X 270
+#define KOMITITLE_X 340
 #define KOMITITLE_Y 370
-#define DIVERTITLE_X 250
+#define DIVERTITLE_X 320
 #define DIVERTITLE_Y 280
 #define QUITBUTTON_X 585
 #define QUITBUTTON_Y 385
@@ -146,6 +146,9 @@
 #define STARTBUTTON_Y 445
 #define SPEEDTITLE_X 85
 #define SPEEDTITLE_Y 445
+#define SHUFFLETITLE_X 129
+#define SHUFFLETITLE_Y 385
+
 #define SPEEDRECTLEFT_X 170
 #define SPEEDRECTTOP_Y 435
 #define SPEEDRECTWIDTH 150
@@ -388,6 +391,10 @@ struct sprite_struct start2_title;
 struct sprite_struct quit2_title;
 struct sprite_struct gpl_title;
 struct sprite_struct speed_title;
+struct sprite_struct shuffleoff_title;
+struct sprite_struct shuffleoff2_title;
+struct sprite_struct shuffleon_title;
+struct sprite_struct shuffleon2_title;
 
 // All the sounds...
 Mix_Chunk * contactdeath_sound = NULL;
@@ -417,6 +424,6 @@ Mix_Music * music = NULL;
 char filepath[TEXTBUFFERSIZE] = DATAPATH;
 char prefsdir[TEXTBUFFERSIZE] = DATAPATH;
 #else
-char filepath[TEXTBUFFERSIZE] = "komidata/"
-char prefsdir[TEXTBUFFERSIZE] = "komidata/"
+char filepath[TEXTBUFFERSIZE] = "komidata/";
+char prefsdir[TEXTBUFFERSIZE] = "komidata/";
 #endif
