@@ -1,0 +1,65 @@
+// From Komi.c
+
+void menu (void);
+void game (void);
+int playlevel (void);
+void dostars (void);
+void resetstar (int n);
+void drawsprites (void);
+void clearsprites (void);
+void movesprites (void);
+void doelectricity (void);
+float rnd (void);
+void blanklevel (void);
+void makelevel (void);
+int sign (float value);
+int playerdeath (void);
+int lightningdeath (void);
+void cleanexit (int exitstatus);
+void loadsound(Mix_Chunk ** thesound, char * directory, char * filename);
+void playsound (int channel, Mix_Chunk * thesound, int loops);
+void drawmenu (void);
+void updatekeymap (void);
+void updatemousemap (void);
+void manageevents (void);
+void checktonguepickup (void);
+int leveldone (void);
+void choosenumbers (void);
+void fadeout (void);
+void updatetitlebar (void);
+void screenshot (SDL_Surface * surface, char * directory, char * filename);
+void doelectrabolts (int x1, int y, int x2);
+void dobrokenlightning (int leftelectrax, int rightelectrax);
+void drawskullpull (int clearflag, int n);
+void algorithmicenemynumbers (int thislevel);
+
+void movescroller (int n);
+void movediver (int n);
+void movebouncer (int n);
+void moveroamer (int n);
+void movebrownian (int n);
+void moveaccelerator (int n);
+void movegunner (int n);
+void moveelectra (int n);
+void movelasergun (int n);
+void moveskull (int n);
+void movedropper (int n);
+
+// From sprites.h
+
+int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct sprite_struct * sprite2, int x2, int y2);
+void init_spriteimagemap(struct sprite_struct * thesprite, int width, int height);
+void drawsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int centrex, int centrey);
+void clearsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int centrex, int centrey);
+void loadsprite (struct sprite_struct * thesprite, char * directory, char * filename, int width, int height, int hider, int hideb, int hideg, int nocollider, int nocollideg, int nocollideb);
+
+// From loaders.h
+
+void loadsprites (void);
+void loadsounds (void);
+
+// From info.h
+
+void printcopyinfo (void);
+void printhelp (void);
+void printversion (void);
