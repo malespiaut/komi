@@ -52,19 +52,21 @@ Komi options:\n\
 void printcopyinfo (void)
 {
    fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
-   fprintf(stdout, "%s", INFO_GPL_BRIEF);
+   fprintf(stdout, INFO_GPL_BRIEF);
    return;
 }
 
 void printhelp (void)
 {
    fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
-   fprintf(stdout, "%s", INFO_HELP);
+   fprintf(stdout, "Compiled to use data in %s\n\n", filepath);
+   fprintf(stdout, INFO_HELP);
    return;
 }
 
 void printversion (void)
 {
    fprintf(stdout, "Komi the Space Frog %s\n", VERSION);
+   fprintf(stdout, "Compiled to use data in %s\n", filepath);
    return;
 }

@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "1.03"
+#define VERSION "1.04"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
 #define PREFSNAME ".komirc"
 
@@ -180,6 +180,9 @@
 
 #define TEXTBUFFERSIZE 1024
 
+#define YES 1
+#define NO 0
+
 /* -------------------------------------------------------------------------- */
 // Structure definitions...
 
@@ -316,7 +319,8 @@ int lightningcheck;     // Should merge this into levelinfo structure. Move ligh
 
 int tick;               // Current frame number.
 int score;              // Current score.
-unsigned int highscore = 0;    // Highest score achieved.
+int highscore = 0;      // Highest score achieved.
+int lastscore = 0;      // Last score this session.
 
 int resetmoney;         // Flag for whether to remake money at level start.
                         // Will be Yes if this is a new level, No if we're replaying one we died in.

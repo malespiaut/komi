@@ -1,3 +1,13 @@
+From 1.03 to 1.04
+-----------------
+
+* Clean up totally atrocious lightning code, which was using 3 almost-identical functions.
+* Print last score for session at titlebar when in main menu.
+* Test for direct collision between Komi and electras' lightning. Shouldn't matter much.
+* Actually check that the virtual screen got created before trying to use it (ie check it ain't == NULL)
+* Report DATAPATH when sent -v or -h command-line options.
+* Reduce amount of money in levels > 30.
+
 From 1.02 to 1.03
 -----------------
 

@@ -57,8 +57,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-int main (int argc, char * argv[]) {
-
+int main (int argc, char * argv[])
+{
    int n;
    
    // Just check here that MAXRECTS has been declared to be big enough (else it might crash in --fastdraw mode)
@@ -196,10 +196,17 @@ int main (int argc, char * argv[]) {
    if (fullscreen == 0)
    {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT);
-      setmaintitlebar();
    } else {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT | SDL_FULLSCREEN);
    }
+   
+   if (virtue == NULL)
+   {
+      fprintf(stderr, "\nFatal error: Unable to create virtual screen!\n\n");
+      exit(1);
+   }
+
+   setmaintitlebar();
    
    srand((int)time(NULL));
 
@@ -369,6 +376,8 @@ void game (void)
       highscore = score;
       saveprefs(prefsdir, PREFSNAME);
    }
+   
+   lastscore = score;
    
    return;
 }
@@ -1526,11 +1535,12 @@ void drawsprites (void)   /*  everything drawn here needs to be cleared at clear
       }
    }
    
+   // Electra rays...
    for (n = 0; n < MAX_ENEMIES; n++)
    {
       if (enemy[n].exists && enemy[n].type == ELECTRA && enemy[n].intvar > n && enemy[enemy[n].intvar].exists)
       {
-         doelectrabolts(enemy[n].x, enemy[n].y, enemy[enemy[n].intvar].x);
+         drawelectricity(enemy[n].x, enemy[n].y, enemy[enemy[n].intvar].x, YES);
       }
    }
    
@@ -1917,9 +1927,17 @@ void choosenumbers (void)
       pretendlevel = shuffledlevels[level - 1];
    }
 
-   // Default values, may be over-ridden in a moment.
-   coins = (pretendlevel / 2.5) + 2;
-   diamonds = (pretendlevel % 2) + 1;
+   // Set coin/diamond default numbers, may be over-ridden in a moment.
+   // The values are not yet copied to the relevant globals (and might remain uncopied).
+   
+   if (pretendlevel > DEFINEDLEVELS && algorithmicenemies == 0)    // If past greatest defined level, generate less money.
+   {                                                               // Unless we're running in "algorithmic" mode, in which
+      coins = ((pretendlevel - DEFINEDLEVELS) / 2.5) + 2;          // case defined levels are irrelevant.
+      diamonds = ((pretendlevel - DEFINEDLEVELS) % 2) + 1;
+   } else {	
+      coins = (pretendlevel / 2.5) + 2;
+      diamonds = (pretendlevel % 2) + 1;
+   }
    
    if (algorithmicenemies == 0)
    {
@@ -2686,7 +2704,7 @@ int playerdeath (void)      // Return 1 if player is dead.
    int komideadflag = 0;
    int n;
 
-   if (lightningdeath())
+   if (lightningdeath() || electraboltsdeath())
    {
       komideadflag = 1;
       playsound(electricdeath_sound);
@@ -2803,6 +2821,30 @@ int lightningdeath (void)     // This will be called from several places for aes
    if (komiy - lightningy < 16)
    {
       return 1;
+   }
+   return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+int electraboltsdeath (void)   // Is there a direct collision between Komi and any electra bolts?
+{
+   int leftelectrax;
+   int rightelectrax;
+   int n;
+
+   for (n = 0; n < MAX_ENEMIES; n++)
+   {
+      // If both electras exist and electra(n) is to the left...
+      if (enemy[n].exists && enemy[n].type == ELECTRA && enemy[enemy[n].intvar].exists && enemy[n].x < enemy[enemy[n].intvar].x)
+      {
+         leftelectrax = enemy[n].x;
+         rightelectrax = enemy[enemy[n].intvar].x;
+         if (komix > leftelectrax && komix < rightelectrax && komiy - enemy[n].y < 16)
+         {
+            return 1;
+         }
+      }
    }
    return 0;
 }
@@ -3147,89 +3189,6 @@ void resetstar (int n)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void doelectricity (void)  // Draw lightning between left and right sides, at vertical position lightningy.
-{
-   int n;
-   int currentx, currenty;
-   int nextx, nexty;
-   int finishedthisline;
-   int brightness;
-   int de_lightningdeath_flag = 0;
-   int brokenlightningflag = 0;
-   
-   if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
-   
-   if (lightningdeath())
-   {
-      de_lightningdeath_flag = 1;
-   }
-   
-   if (levelinfo.electrasflag && levelinfo.electraoffset == 0)
-   {
-      for (n = 0; n < MAX_ENEMIES; n++)
-      {
-         if (enemy[n].exists && enemy[n].type == ELECTRA && enemy[enemy[n].intvar].exists)
-         {
-            brokenlightningflag = 1;
-            dobrokenlightning(enemy[n].x, enemy[enemy[n].intvar].x);
-            break;
-         }
-      }
-   }
-   
-   if (brokenlightningflag == 0)
-   {
-      for (n = 0; n < FORKSTODRAW; n++)
-      {
-         currentx = LIGHTNINGADJUST;
-         if (rnd() < 0.5)
-         {
-            currenty = lightningy;
-         } else {
-            currenty = lightningy - 1;   // Hack needed cos generator's "gun" is 2 pixels wide
-         }
-         finishedthisline = 0;
-         while (1)
-         {
-            nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
-            nexty = lightningy + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
-         
-            if (de_lightningdeath_flag && nextx >= komix && currentx < komix && lightningy <= komiy)
-            {
-               nextx = komix;
-               nexty = lightningy + LIGHTNINGVARIANCE;
-            }
-        
-            if (nextx >= WIDTH - LIGHTNINGADJUST)
-            {
-               nextx = WIDTH - LIGHTNINGADJUST;
-               if (rnd() < 0.5)
-               {
-                  nexty = lightningy;
-               } else {
-                  nexty = lightningy - 1;
-               }
-               finishedthisline = 1;
-            }
-            brightness = rnd() * 155;
-            line(virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
-            currentx = nextx;
-            currenty = nexty;
-            if (finishedthisline)
-            {
-               break;
-            }
-         }
-      }
-   }
-   
-   if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
-   
-   return;
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-
 int sign (float value)    // Returns sign of value, either -1 for negative, 1 for positive, or 0 for zero.
 {
    if (value < 0) return -1;
@@ -3337,9 +3296,41 @@ void screenshot (SDL_Surface * surface, char * directory, char * filename)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightning between (x1, y) and (x2, y)
+void doelectricity (void)
 {
+   int leftelectrax;
+   int rightelectrax;
+   int temp;
    int n;
+   
+   if (levelinfo.electrasflag && levelinfo.electraoffset == 0)    // When electra enemies ride over the main lightning...
+   {
+      for (n = 0; n < MAX_ENEMIES; n++)
+      {
+         if (enemy[n].exists && enemy[n].type == ELECTRA && enemy[enemy[n].intvar].exists)   // If both electras exist...
+         {
+            leftelectrax = enemy[n].x;
+            rightelectrax = enemy[enemy[n].intvar].x;
+            if (rightelectrax < leftelectrax)
+            {
+               temp = leftelectrax; leftelectrax = rightelectrax; rightelectrax = temp;
+            }
+            drawelectricity(LIGHTNINGADJUST, lightningy, leftelectrax, NO);
+            drawelectricity(rightelectrax, lightningy, WIDTH - LIGHTNINGADJUST, NO);
+            return;
+         }
+      }
+   }
+   drawelectricity(LIGHTNINGADJUST, lightningy, WIDTH - LIGHTNINGADJUST, NO);
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void drawelectricity (int x1, int y, int x2, int electraflag)      // Draw electricity between (x1, y) and (x2, y)
+                                                                   // electraflag changes its behaviour slightly (and makes it red)
+{
    int currentx, currenty;
    int nextx, nexty;
    int finishedthisline;
@@ -3355,37 +3346,48 @@ void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightn
       x2 = temp;
    }
 
-   for (n = 0; n < FORKSTODRAW; n++)
-   {
-      currentx = x1;
-      currenty = y;
+   currentx = x1;
+   currenty = y;
 
-      finishedthisline = 0;
-      while (1)
+   finishedthisline = 0;
+   while (1)
+   {
+      nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
+      nexty = y + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
+
+      if (electraflag)
       {
-         nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
-         nexty = y + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
-         
-         if (nextx >= komix && currentx < komix && y >= komiy - tonguelength && y <= komiy)
+         if (nextx >= komix && currentx < komix && (y >= komiy - tonguelength || electraboltsdeath()))
          {
             nextx = komix;
             nexty = y + LIGHTNINGVARIANCE;
          }
-        
-         if (nextx >= x2)
+      } else {
+         if (nextx >= komix && currentx < komix && lightningdeath())
          {
-            nextx = x2;
-            nexty = y;
-            finishedthisline = 1;
+            nextx = komix;
+            nexty = y + LIGHTNINGVARIANCE;
          }
-         brightness = rnd() * 155;
+      }
+      
+      if (nextx >= x2)
+      {
+         nextx = x2;
+         nexty = y;
+         finishedthisline = 1;
+      }
+      brightness = rnd() * 155;
+      if (electraflag)
+      {
          line(virtue, currentx, currenty, nextx, nexty, 255, brightness, brightness);
-         currentx = nextx;
-         currenty = nexty;
-         if (finishedthisline)
-         {
-            break;
-         }
+      } else {
+         line(virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
+      }
+      currentx = nextx;
+      currenty = nexty;
+      if (finishedthisline)
+      {
+         break;
       }
    }
    
@@ -3396,89 +3398,7 @@ void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightn
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void dobrokenlightning (int leftelectrax, int rightelectrax)   // Draw lightning between left and right sides
-                                                               // But draw nothing between x and y.
-                                                               // Called when Electras exist and are level with lightning.
-{
-
-   // Note that virtue should be locked before calling this.
-
-   int n;
-   int currentx, currenty;
-   int nextx, nexty;
-   int finishedthisline;
-   int brightness;
-   int de_lightningdeath_flag = 0;
-   int temp;
-   
-   if (leftelectrax > rightelectrax)
-   {
-      temp = leftelectrax;
-      leftelectrax = rightelectrax;
-      rightelectrax = temp;
-   }
-   
-   for (n = 0; n < FORKSTODRAW; n++)
-   {
-      currentx = LIGHTNINGADJUST;
-      if (rnd() < 0.5)
-      {
-         currenty = lightningy;
-      } else {
-         currenty = lightningy - 1;   // Hack needed cos generator's "gun" is 2 pixels wide
-      }
-      finishedthisline = 0;
-      while (1)
-      {
-         nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
-         nexty = lightningy + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
-         
-         if (de_lightningdeath_flag && nextx >= komix && currentx < komix)
-         {
-            nextx = komix;
-            nexty = komiy;
-         }
-         
-         if (nextx > leftelectrax && currentx < leftelectrax)
-         {
-            nextx = leftelectrax;
-            nexty = lightningy;
-         }
-        
-         if (nextx >= WIDTH - LIGHTNINGADJUST)
-         {
-            nextx = WIDTH - LIGHTNINGADJUST;
-            if (rnd() < 0.5)
-            {
-               nexty = lightningy;
-            } else {
-               nexty = lightningy - 1;
-            }
-            finishedthisline = 1;
-         }
-         brightness = rnd() * 155;
-         line(virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
-         currentx = nextx;
-         currenty = nexty;
-         
-         if (currentx == leftelectrax)
-         {
-            currentx = rightelectrax;
-         }
-         
-         if (finishedthisline)
-         {
-            break;
-         }
-      }
-   }
-   
-   return;
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-
-void drawskullpull (int clearflag, int n)   // Draw the circles from the Skull to Komi.
+void drawskullpull (int clearflag, int n)   // Draw the circles from the Skull (enemy n) to Komi.
 {
    int pullstarty, pullstartx;
    int i;
@@ -3805,7 +3725,7 @@ void setmaintitlebar (void)
 {
    char thestring[TEXTBUFFERSIZE];
    
-   sprintf(thestring, "Komi %s  -  Highscore: %d", VERSION, highscore);
+   sprintf(thestring, "Komi %s  -  High Score: %d  -  Last Score: %d", VERSION, highscore, lastscore);
    SDL_WM_SetCaption(thestring, NULL);
    return;
 }
