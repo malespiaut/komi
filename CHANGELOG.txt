@@ -1,3 +1,15 @@
+From 0.95b to 1.0
+-----------------
+
+* Removed last uses of direct pixel access without locking.
+* rect() has thus been entirely removed.
+* line() only called after surface locked.
+* Added Bomber enemy type.
+* Proper behaviour if player presses escape while screen is fading out after death or level completion.
+* Levels defined up to 30.
+* Added Sniper enemy type (first appearance is level 16).
+* More level changes.
+
 From 0.9b to 0.95b
 ------------------
 * Screenshot key moved to F12. Successful generation of screenshot plays a sound.

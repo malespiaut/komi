@@ -60,6 +60,8 @@ void moveskull (int n);
 void movedropper (int n);
 void moveeyeball (int n);
 void movewrapball (int n);
+void movebomber (int n);
+void movesniper (int n);
 
 // From sprites.h
 
@@ -84,7 +86,6 @@ void printversion (void);
 
 void putpixel(SDL_Surface * surface, int x, int y, Uint32 pixel);
 void line (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
-void rect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
 void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
 void cls (SDL_Surface * bitmapstruct, int red, int green, int blue);
 void updaterectsarray (int leftx, int topy, int width, int height);

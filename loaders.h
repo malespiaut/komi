@@ -45,6 +45,12 @@ void loadsprites (void)
    spritemap[EYEBALL] = &eyeball_sprite;
    loadsprite(&wrapball_sprite, filepath, "sprites_wrapball.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    spritemap[WRAPBALL] = &wrapball_sprite;
+   loadsprite(&bomber_sprite, filepath, "sprites_bomber.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   spritemap[BOMBER] = &bomber_sprite;
+   loadsprite(&sniperleft_sprite, filepath, "sprites_sniperleft.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   spritemap[SNIPERLEFT] = &sniperleft_sprite;
+   loadsprite(&sniperright_sprite, filepath, "sprites_sniperright.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   spritemap[SNIPERRIGHT] = &sniperright_sprite;
 
    loadsprite(&powerup_sprite, filepath, "sprites_powerup.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    powerupspritemap[GAMEMOD] = &powerup_sprite;

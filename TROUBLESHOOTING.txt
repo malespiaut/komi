@@ -24,7 +24,9 @@ Speed Problems
 
 The game may be too fast or too slow. You can adjust the speed by clicking on the speed bar in the title screen.
 
-If things are still too slow, as a last resort, try doing:
+Unfortunately, it seems that some speeds are better than others in terms of how "jerky" the motion of objects on the screen is - I suspect this has something to do with the refresh rate of the monitor. Some experimentation with the speed setting may be necessary.
+
+If things are too slow even on the fastest setting, as a last resort, try doing:
 
   komi --fastdraw
   
@@ -36,7 +38,14 @@ The game runs fine on my computer, yet runs really slowly on a supposedly faster
 Keys
 ----
 
-For now, the keys can be edited only by modifying keys.h and recompiling. Expect a more friendly way in a future release...
+For now, the keys can be edited only by modifying keys.h and recompiling. Expect a more friendly way in a future release. Maybe...
+
+
+Difficulty
+----------
+
+Komi is a hard game. :-)
+Certainly when played at a proper speed...
 
 
 Other Problems?

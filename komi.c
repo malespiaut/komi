@@ -60,6 +60,10 @@
 int main (int argc, char * argv[]) {
 
    int n;
+   
+   // Just check here that MAXRECTS has been declared to be big enough (else it might crash in --fastdraw mode)
+   // Note that each sprite uses 2 update-rects - one for it's current position, and one for it's old one.
+   assert(MAXRECTS > (MAX_ENEMIES * 2) + (MAX_COINS * 2) + (MAX_DIAMONDS * 2) + (MAX_ENEMYSHOTS * 2) + (MAX_FRIENDLYSHOTS * 2) + 50);
 
    for (n = 1; n < argc; n++)
    {
@@ -186,7 +190,7 @@ int main (int argc, char * argv[]) {
          // }
       }
    }
-   
+
    if (fullscreen == 0)
    {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT);
@@ -214,11 +218,11 @@ int main (int argc, char * argv[]) {
 
 void menu (void)
 {
-
    int highlight_start = 0;
    int highlight_quit = 0;
 
    drawmenu(highlight_start, highlight_quit);
+   
    while (1)
    {
       keymap.escape = 0;      // So we don't respond to escape pressed in game.
@@ -269,11 +273,6 @@ void menu (void)
             SDL_ShowCursor(SDL_DISABLE);
             game();
             SDL_ShowCursor(SDL_ENABLE);
-            if (score > highscore && cheats == 0 && invincible == 0)
-            {
-               highscore = score;
-               saveprefs(filepath, "prefs");
-            }
             setmaintitlebar();
             drawmenu(highlight_start, highlight_quit);
          } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.pixelmap->w / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.pixelmap->h / 2) {
@@ -298,6 +297,7 @@ void game (void)
    lives = START_LIVES;
    fastretract = 0;
    score = 0;
+   havecheated = 0;
    resetmoney = 1;
    
    gameoverflag = 0;
@@ -305,37 +305,38 @@ void game (void)
    {
       switch (playlevel())
       {
-      case LEVEL_COMPLETE :
-         level++;
-         resetmoney = 1;
-         break;
-      case DEATH :
-         lives--;
-         fastretract = 0;    // Currently the only thing that needs to be reset here.
-         resetmoney = 0;
-         if (lives < 1)
-         {
+         case LEVEL_COMPLETE :
+            level++;
+            resetmoney = 1;
+            break;
+         case DEATH :
+            lives--;
+            fastretract = 0;    // Currently the only thing that needs to be reset here.
+            resetmoney = 0;
+            if (lives < 1)
+            {
+               gameoverflag = 1;
+            }
+            if (lives == 1)
+            {
+               givelastlifewarning = 1;
+            }
+            break;
+         case QUIT :
             gameoverflag = 1;
-         }
-         if (lives == 1)
-         {
-            givelastlifewarning = 1;
-         }
-         break;
-      case QUIT :
-         gameoverflag = 1;
-         break;
-      default :
-         fprintf(stderr, "Fatal error: playlevel() returned an unexpected value.\n\n");
-         cleanexit(1);
-      }
-      
-      manageevents();
-      if (keymap.escape)
-      {
-         gameoverflag = 1;
+            break;
+         default :
+            fprintf(stderr, "Fatal error: playlevel() returned an unexpected value.\n\n");
+            cleanexit(1);
       }
    }
+   
+   if (score > highscore && havecheated == 0 && invincible == 0)
+   {
+      highscore = score;
+      saveprefs(filepath, "prefs");
+   }
+   
    return;
 }
 
@@ -396,6 +397,8 @@ int playlevel (void)
       
       rnd();   // Pump rnd() every frame for (hopefully) more randomness when it matters.
       
+      playedshootsound = 0;   // shoot_sound can be annoying if played loud due to simultaneous playback of > 1 instance.
+      
       if (freeze)
       {
          freeze--;
@@ -439,19 +442,37 @@ int playlevel (void)
       {
          if (playerdeath())
          {
-            SDL_Delay(500);
+            for (n = 0; n < 10; n++)     // 10 delays of 50 ms, with event checking so user can press escape.
+            {
+               manageevents();
+               if (keymap.escape)
+               {
+                  return QUIT;
+               }
+               SDL_Delay(50);
+            }
             if (lives == 1)
             {
                playsound(gameover_sound);
             }
-            fadeout();
-            return DEATH;
+            fadeout();            // fadeout() returns immediately if escape is pressed while it's doing its thing.
+            if (keymap.escape)    // In which case, keymap.escape will still be set.
+            {
+               return QUIT;
+            } else {
+               return DEATH;
+            }
          }
       }
       if (leveldone())
       {
          fadeout();
-         return LEVEL_COMPLETE;
+         if (keymap.escape)        // See note above.
+         {
+            return QUIT;
+         } else {
+            return LEVEL_COMPLETE;
+         }
       }
       
       manageevents();
@@ -461,6 +482,7 @@ int playlevel (void)
       }
       if (cheats && keymap.levelskip)
       {
+         havecheated = 1;
          return LEVEL_COMPLETE;
       }
       if (keymap.screenshot)
@@ -826,6 +848,15 @@ void movesprites (void)
                case WRAPBALL :
                   movewrapball(n);
                   break;
+               case BOMBER :
+                  movebomber(n);
+                  break;
+               case SNIPERLEFT :
+                  movesniper(n);
+                  break;
+               case SNIPERRIGHT :
+                  movesniper(n);
+                  break;
             }
          }
       }
@@ -1090,7 +1121,11 @@ void movegunner (int n)
                enemyshot[i].speedx = enemyshot[i].speedx / (fabs(enemyshot[i].speedy) / levelinfo.enemyshotbasespeed);
                enemyshot[i].speedy = enemyshot[i].speedy / (fabs(enemyshot[i].speedy) / levelinfo.enemyshotbasespeed);
             }
-            playsound(shoot_sound);
+            if (playedshootsound == 0)
+            {
+               playsound(shoot_sound);
+               playedshootsound = 1;
+            }
             enemy[n].intvar = tick;
             break;
          }
@@ -1294,6 +1329,106 @@ void movewrapball (int n)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
+
+void movebomber (int n)
+{
+   int i;
+
+   enemy[n].x += enemy[n].speedx;
+   if (enemy[n].x < SPRITE_SIZE / 2)
+   {
+      enemy[n].x = SPRITE_SIZE / 2;
+      enemy[n].speedx = fabs(enemy[n].speedx);
+   }
+   if (enemy[n].x > WIDTH - (SPRITE_SIZE / 2))
+   {
+      enemy[n].x = WIDTH - (SPRITE_SIZE / 2);
+      enemy[n].speedx = fabs(enemy[n].speedx) * -1;
+   }
+   enemy[n].intvar -= 1;
+   if (enemy[n].intvar == 0)
+   {
+      enemy[n].intvar = enemy[n].intvar2;
+      for (i = 0; i < MAX_ENEMYSHOTS; i++)
+      {
+         if (enemyshot[i].exists == 0)
+         {
+            enemyshot[i].exists = 1;
+            enemyshot[i].x = enemy[n].x;
+            enemyshot[i].y = enemy[n].y;
+            enemyshot[i].speedx = 0;
+            enemyshot[i].speedy = levelinfo.bombspeed;
+            if (playedshootsound == 0)
+            {
+               playsound(shoot_sound);
+               playedshootsound = 1;
+            }
+            break;
+         }
+      }
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void movesniper (int n)
+{
+   int i;
+
+   enemy[n].y += enemy[n].speedy;
+   if (enemy[n].y < SPRITE_SIZE / 2)
+   {
+      enemy[n].y = SPRITE_SIZE / 2;
+      enemy[n].speedy = fabs(enemy[n].speedy);
+   }
+   if (enemy[n].y > HEIGHT - (SPRITE_SIZE * 2))
+   {
+      enemy[n].y = HEIGHT - (SPRITE_SIZE * 2);
+      enemy[n].speedy = fabs(enemy[n].speedy) * -1;
+   }
+   if (tonguelength)
+   {
+      if (komiy - tonguelength < enemy[n].y)
+      {
+         if (enemy[n].intvar == 0)
+         {
+            enemy[n].intvar = 1;
+            for (i = 0; i < MAX_ENEMYSHOTS; i++)
+            {
+               if (enemyshot[i].exists == 0)
+               {
+                  enemyshot[i].exists = 1;
+                  enemyshot[i].x = enemy[n].x;
+                  enemyshot[i].y = enemy[n].y;
+                  
+                  enemyshot[i].speedx = SNIPERSHOTSPEED;
+                  if (enemy[n].type == SNIPERRIGHT)
+                  {
+                     enemyshot[i].speedx *= -1;
+                  }
+                  
+                  enemyshot[i].speedy = 0;
+                  
+                  if (playedshootsound == 0)
+                  {
+                     playsound(shoot_sound);
+                     playedshootsound = 1;
+                  }
+                  break;
+               }
+            }
+         }
+      }
+   } else {                    // Note: This working correctly is dependent on there always being a tick of tonguelength == 0
+      enemy[n].intvar = 0;     // even when spacebar is continually held down. Thankfully, this is the case.
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
    
 void drawsprites (void)   /*  everything drawn here needs to be cleared at clearsprites()  */
 {
@@ -1350,14 +1485,12 @@ void drawsprites (void)   /*  everything drawn here needs to be cleared at clear
    {
       if (fastretract)
       {
-         frect(virtue, (komix - TONGUE_WIDTH / 2), komiy - tonguelength, (komix + TONGUE_WIDTH / 2), komiy, TONGUE_FAST_R, TONGUE_FAST_G, TONGUE_FAST_B);
-         line(virtue, komix - TONGUE_WIDTH / 2, komiy - tonguelength, komix - TONGUE_WIDTH / 2, komiy, 0, 0, 0);
-         line(virtue, komix + (TONGUE_WIDTH / 2) - 1, komiy - tonguelength, komix + (TONGUE_WIDTH / 2) - 1, komiy, 0, 0, 0);
+         frect(virtue, (komix - TONGUE_WIDTH / 2), komiy - tonguelength - 1, komix + (TONGUE_WIDTH / 2), komiy, 0, 0, 0);
+         frect(virtue, (komix - TONGUE_WIDTH / 2) + 1, komiy - tonguelength, (komix + TONGUE_WIDTH / 2) - 1, komiy, TONGUE_FAST_R, TONGUE_FAST_G, TONGUE_FAST_B);
          drawsprite(&fasttip_sprite, virtue, komix, komiy - tonguelength);
       } else {
-         frect(virtue, (komix - TONGUE_WIDTH / 2), komiy - tonguelength, (komix + TONGUE_WIDTH / 2), komiy, TONGUE_R, TONGUE_G, TONGUE_B);
-         line(virtue, komix - TONGUE_WIDTH / 2, komiy - tonguelength, komix - TONGUE_WIDTH / 2, komiy, 0, 0, 0);
-         line(virtue, komix + (TONGUE_WIDTH / 2) - 1, komiy - tonguelength, komix + (TONGUE_WIDTH / 2) - 1, komiy, 0, 0, 0);
+         frect(virtue, (komix - TONGUE_WIDTH / 2), komiy - tonguelength - 1, komix + (TONGUE_WIDTH / 2), komiy, 0, 0, 0);
+         frect(virtue, (komix - TONGUE_WIDTH / 2) + 1, komiy - tonguelength, (komix + TONGUE_WIDTH / 2) - 1, komiy, TONGUE_R, TONGUE_G, TONGUE_B);
          drawsprite(&tip_sprite, virtue, komix, komiy - tonguelength);
       }
    }
@@ -1680,9 +1813,12 @@ void blanklevel (void)
    levelinfo.scrollerspeedx = 1;
    levelinfo.scrolleroffset = SPRITE_SIZE;
    
-   levelinfo.diverhoverlevel = SPRITE_SIZE + SPRITE_SIZE / 4;
+   levelinfo.diverhoverlevel = SPRITE_SIZE + (SPRITE_SIZE / 4);
    levelinfo.divespeedy = DIVE_SPEEDY_DEFAULT;
    levelinfo.divespeedx = DIVE_SPEEDX_DEFAULT;
+   
+   levelinfo.bomberhoverlevel = (SPRITE_SIZE * 2) + (SPRITE_SIZE / 4);
+   levelinfo.bombspeed = BOMB_SPEED_DEFAULT;
    
    levelinfo.roamerminspeed = ROAMER_MIN_SPEED_DEFAULT;
    levelinfo.roamermaxspeed = ROAMER_MAX_SPEED_DEFAULT;
@@ -1696,6 +1832,8 @@ void blanklevel (void)
    
    levelinfo.electrasflag = 0;
    levelinfo.electraoffset = ELECTRA_OFFSET_DEFAULT;
+   
+   levelinfo.snipersflag = 0;
    
    levelinfo.dropperhoveroffset = SPRITE_SIZE;
    levelinfo.dropperspeedy = DROPPER_SPEEDY_DEFAULT;
@@ -1718,7 +1856,7 @@ void choosenumbers (void)
 
    int pretendlevel;  // Used for shuffled levels; we pretend we're on this level.
    
-   if (shuffle == 0 || level > SHUFFLEDLEVELS)
+   if (shuffle == 0 || level > DEFINEDLEVELS)
    {
       pretendlevel = level;
    } else {
@@ -1737,6 +1875,8 @@ void choosenumbers (void)
             levelinfo.enemycount[BOUNCER] = 1;
             levelinfo.enemycount[SCROLLERLEFT] = 1;
             levelinfo.enemycount[DROPPER] = 2;
+            levelinfo.enemycount[BOMBER] = 1;
+            levelinfo.roamermaxspeed = 2;
             levelinfo.topdiamonds = 0;
             break;
          case 2 :
@@ -1769,7 +1909,8 @@ void choosenumbers (void)
             levelinfo.enemycount[SCROLLERLEFT] = 2;
             levelinfo.enemycount[SCROLLERRIGHT] = 2;
             levelinfo.enemycount[LASERGUN] = 1;
-            levelinfo.enemycount[BROWNIAN] = 4;
+            levelinfo.enemycount[BROWNIAN] = 3;
+            levelinfo.enemycount[BOMBER] = 1;
             break;
          case 7 :
             levelinfo.enemycount[ROAMER] = 7;
@@ -1794,24 +1935,25 @@ void choosenumbers (void)
                diamonds = 2;
             break;
          case 10 :
-            levelinfo.enemycount[DROPPER] = 7;
+            levelinfo.enemycount[DROPPER] = 8;
             levelinfo.enemycount[GUNNER] = 1;
             levelinfo.enemycount[ROAMER] = 1;
-            levelinfo.gunnershootprob = GUNNER_SHOOT_PROB_DEFAULT * 0.5;
+            levelinfo.gunnershootprob = GUNNER_SHOOT_PROB_DEFAULT * 0.6;
                coins = 4;
                diamonds = 2;
             lightningcheck = 60;
             break;
          case 11 :
-            levelinfo.enemycount[SCROLLERLEFT] = 2;
+            levelinfo.enemycount[BOMBER] = 7;
             levelinfo.enemycount[SCROLLERRIGHT] = 2;
             levelinfo.enemycount[ROAMER] = 2;
-            levelinfo.enemycount[EYEBALL] = 1;
-            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.roamermaxspeed = 2;        // Mostly for the Bombers, which also use this value.
+               coins = 6;
+               diamonds = 1;
             break;
          case 12 :
             levelinfo.electrasflag = 1;
-            levelinfo.enemycount[ACCELERATOR] = 1;
+            levelinfo.enemycount[SCROLLERRIGHT] = 1;
             levelinfo.enemycount[SCROLLERLEFT] = 1;
             levelinfo.enemycount[DIVER] = 1;
             levelinfo.enemycount[ROAMER] = 1;
@@ -1848,14 +1990,17 @@ void choosenumbers (void)
             lightningcheck = 100;
             break;
          case 16 :
-            levelinfo.enemycount[DIVER] = 4;
+            levelinfo.enemycount[DIVER] = 1;
             levelinfo.enemycount[SKULL] = 1;
-            levelinfo.enemycount[BOUNCER] = 2;
-               coins = 5;
-               diamonds = 0;
+            levelinfo.enemycount[BROWNIAN] = 2;
+            levelinfo.enemycount[ROAMER] = 2;
+            levelinfo.snipersflag = 1;
+               coins = 4;
+               diamonds = 3;
             break;
          case 17 :
-            levelinfo.enemycount[GUNNER] = 2;
+            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.enemycount[BOMBER] = 1;
             levelinfo.enemycount[ACCELERATOR] = 2;
             levelinfo.enemycount[ROAMER] = 2;
             levelinfo.guardianaccels = 1;
@@ -1871,6 +2016,16 @@ void choosenumbers (void)
             levelinfo.gunnershootprob = 0.005;
             break;
          case 19 :
+            levelinfo.enemycount[SCROLLERLEFT] = 1;
+            levelinfo.enemycount[SCROLLERRIGHT] = 1;
+            levelinfo.enemycount[EYEBALL] = 1;
+            levelinfo.enemycount[WRAPBALL] = 1;
+            levelinfo.snipersflag = 1;
+            lightningcheck = 100000000;
+               coins = 6;
+               diamonds = 2;
+            break;
+         case 20 :
             levelinfo.enemycount[SCROLLERRIGHT] = 2;
             levelinfo.enemycount[DROPPER] = 3;
             levelinfo.enemycount[BOUNCER] = 1;
@@ -1882,7 +2037,7 @@ void choosenumbers (void)
             levelinfo.topdiamonds = 1;
             lightningcheck = 100;
             break;
-         case 20 :
+         case 21 :
             levelinfo.enemycount[DIVER] = 5;
             levelinfo.enemycount[BROWNIAN] = 2;
             levelinfo.enemycount[ROAMER] = 1;
@@ -1892,19 +2047,10 @@ void choosenumbers (void)
                diamonds = 3;
             levelinfo.topdiamonds = 0;
             break;
-         case 21 :
-            levelinfo.enemycount[BOUNCER] = 3;
-            levelinfo.enemycount[ROAMER] = 6;
-            levelinfo.enemycount[BROWNIAN] = 6;
-            levelinfo.enemycount[DIVER] = 1;
-            levelinfo.enemycount[SCROLLERLEFT] = 1;
-            levelinfo.powerup_prob[SHOOTPOWER] = 1;
-            lightningcheck = 100000000;
-            break;
          case 22 :
             levelinfo.enemycount[DROPPER] = 5;
-            levelinfo.enemycount[GUNNER] = 1;
             levelinfo.enemycount[EYEBALL] = 1;
+            levelinfo.enemycount[WRAPBALL] = 1;
             lightningcheck = 100000000;
                coins = 6;
                diamonds = 3;
@@ -1915,22 +2061,23 @@ void choosenumbers (void)
                diamonds = 1;
             break;
          case 24 :
-            levelinfo.enemycount[BOUNCER] = 2;
-            levelinfo.enemycount[GUNNER] = 2;
-            levelinfo.enemycount[SCROLLERLEFT] = 2;
-            levelinfo.enemycount[SCROLLERRIGHT] = 2;
-            levelinfo.enemycount[ROAMER] = 3;
-               coins = 5;
-               diamonds = 1;
+            levelinfo.enemycount[BOUNCER] = 3;
+            levelinfo.enemycount[ROAMER] = 6;
+            levelinfo.enemycount[BROWNIAN] = 6;
+            levelinfo.enemycount[DIVER] = 1;
+            levelinfo.enemycount[SCROLLERLEFT] = 1;
+            levelinfo.powerup_prob[SHOOTPOWER] = 1;
+            lightningcheck = 100000000;
+               coins = 9;
+               diamonds = 2;
             break;
          case 25 :
-            levelinfo.electrasflag = 1;
             levelinfo.enemycount[GUNNER] = 3;
             levelinfo.enemycount[SCROLLERRIGHT] = 2;
-            levelinfo.enemycount[BROWNIAN] = 2;
-            lightningcheck = 40;
+            lightningcheck = 100000000;
             levelinfo.topdiamonds = 0;
-            levelinfo.electraoffset = 0;
+            levelinfo.roamermaxspeed = 1.5;
+            levelinfo.roamerminspeed = 3;
                coins = 3;
                diamonds = 4;
             break;
@@ -1953,6 +2100,23 @@ void choosenumbers (void)
             levelinfo.guardianaccels = 1;
             break;
          case 28 :
+            levelinfo.enemycount[BOUNCER] = 2;
+            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.enemycount[BOMBER] = 1;
+            levelinfo.enemycount[SCROLLERLEFT] = 2;
+            levelinfo.enemycount[SCROLLERRIGHT] = 2;
+            levelinfo.enemycount[ROAMER] = 3;
+               coins = 5;
+               diamonds = 1;
+            break;
+         case 29 :
+            levelinfo.enemycount[BOMBER] = 12;
+            levelinfo.enemycount[BOUNCER] = 4;
+            levelinfo.topdiamonds = 0;
+               coins = 6;
+               diamonds = 4;
+            break;
+         case 30 :                  // Remember to increase DEFINEDLEVELS in declarations.h if we go past this.
             lightningcheck = 2;
             levelinfo.fastlightningy = START_LIGHTNING_Y + 10;
             levelinfo.fastlightningcheck = 1;
@@ -2058,6 +2222,12 @@ Uses intvar to store what tick it should fire its laser.
 
 EYEBALL / WRAPBALL:
 Uses floatvar to store it's maximum speed.
+
+BOMBER:
+Uses intvar for countdown to shot, and intvar2 for what to reset count to afterwards.
+
+SNIPER:
+Uses intvar for whether it has already fired a shot since the tongue started its trip.
 
 */
 
@@ -2171,6 +2341,26 @@ Uses floatvar to store it's maximum speed.
             enemy[t].speedx = sign(rnd() - 0.5) * 2; if (enemy[t].speedx == 0) enemy[t].speedx = 2;
             enemy[t].speedy = 0;
             enemy[t].intvar = 150 + (n * 40);
+            enemy[t].intvar2 = enemy[t].intvar;
+            break;
+         }
+      }
+   }
+
+   for (n = 0; n < levelinfo.enemycount[BOMBER]; n++)
+   {
+      for (t = 0; t < MAX_ENEMIES; t++)
+      {
+         if (enemy[t].exists == 0)
+         {
+            enemy[t].exists = 1;
+            enemy[t].type = BOMBER;
+            enemy[t].x = (rnd() * (WIDTH - (SPRITE_SIZE * 2))) + SPRITE_SIZE;
+            enemy[t].y = levelinfo.bomberhoverlevel;
+            enemy[t].speedx = (rnd() * (levelinfo.roamermaxspeed - levelinfo.roamerminspeed)) + levelinfo.roamerminspeed;
+            if (rnd() < 0.5) enemy[t].speedx *= -1;
+            enemy[t].speedy = 0;
+            enemy[t].intvar = 80 + (n * 40);
             enemy[t].intvar2 = enemy[t].intvar;
             break;
          }
@@ -2304,6 +2494,38 @@ Uses floatvar to store it's maximum speed.
             enemy[t + 1].intvar = t;
             
             levelinfo.enemycount[ELECTRA] = 2;
+            
+            break;
+         }
+      }
+   }
+   
+   if (levelinfo.snipersflag)
+   {
+      for (t = 0; t < MAX_ENEMIES - 1; t++)
+      {
+         if (enemy[t].exists == 0)
+         {
+            enemy[t].exists = 1;
+            enemy[t].type = SNIPERLEFT;
+            enemy[t].x = SPRITE_SIZE / 2;
+            enemy[t].y = HEIGHT - (SPRITE_SIZE * 2);
+            enemy[t].speedx = 0;
+            enemy[t].speedy = -2;
+            enemy[t].intvar = 0;
+            
+            assert(enemy[t + 1].exists == 0);
+            
+            enemy[t + 1].exists = 1;
+            enemy[t + 1].type = SNIPERRIGHT;
+            enemy[t + 1].x = WIDTH - (SPRITE_SIZE / 2);
+            enemy[t + 1].y = HEIGHT - (SPRITE_SIZE * 2);
+            enemy[t + 1].speedx = 0;
+            enemy[t + 1].speedy = -2;
+            enemy[t + 1].intvar = 0;
+            
+            levelinfo.enemycount[SNIPERLEFT] = 1;
+            levelinfo.enemycount[SNIPERRIGHT] = 1;
             
             break;
          }
@@ -2627,9 +2849,8 @@ void drawspeedrect (void)   // The rect showing the speed at the bottom left of 
    int fillx1, fillx2, filly1, filly2;
    
    // Clear it first...
-   frect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 0, 0, 0);
-   
-   rect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 150, 150, 150);
+   frect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 150, 150, 150);
+   frect(virtue, SPEEDRECTLEFT_X + 1, SPEEDRECTTOP_Y + 1, SPEEDRECTLEFT_X + SPEEDRECTWIDTH - 1, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT - 1, 0, 0, 0);
    if (delay < LONGESTDELAY)
    {
       fillx1 = SPEEDRECTLEFT_X;
@@ -2910,7 +3131,7 @@ void doelectricity (void)  // Draw lightning between left and right sides, at ve
                finishedthisline = 1;
             }
             brightness = rnd() * 155;
-            line (virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
+            line(virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
             currentx = nextx;
             currenty = nexty;
             if (finishedthisline)
@@ -2946,17 +3167,29 @@ float rnd (void)    // Random number between 0 and 1.
 
                        // Called when Komi dies or level completed.
 void fadeout (void)    // Not so much a fade as a series of black lines...
+
+// Note that this function calls manageevents() repeatedly, and returns immediately if keymap.escape is set.
+// The calling function can check keymap.escape to see if this is why it has returned.
+
 {
    int n;
+   
+   if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);    // Use of line() requires this.
    
    for (n = 0; n < HEIGHT; n += 2)
    {
       line(virtue, 0, n, WIDTH - 1, n, 0, 0, 0);
       if (n % 10 == 0)
       {
+         if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
          SDL_UpdateRect(virtue, 0, 0, 0, 0);
          SDL_Delay(5);
          manageevents();
+         if (keymap.escape)
+         {
+            return;
+         }
+         if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
       }
    }
 
@@ -2965,11 +3198,19 @@ void fadeout (void)    // Not so much a fade as a series of black lines...
       line(virtue, 0, n, WIDTH - 1, n, 0, 0, 0);
       if ((n + 1) % 10 == 0)
       {
+         if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
          SDL_UpdateRect(virtue, 0, 0, 0, 0);
          SDL_Delay(5);
          manageevents();
+         if (keymap.escape)
+         {
+            return;
+         }
+         if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
       }
    }
+   
+   if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
    
    SDL_UpdateRect(virtue, 0, 0, 0, 0);
    return;
@@ -3057,7 +3298,7 @@ void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightn
             finishedthisline = 1;
          }
          brightness = rnd() * 155;
-         line (virtue, currentx, currenty, nextx, nexty, 255, brightness, brightness);
+         line(virtue, currentx, currenty, nextx, nexty, 255, brightness, brightness);
          currentx = nextx;
          currenty = nexty;
          if (finishedthisline)
@@ -3135,7 +3376,7 @@ void dobrokenlightning (int leftelectrax, int rightelectrax)   // Draw lightning
             finishedthisline = 1;
          }
          brightness = rnd() * 155;
-         line (virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
+         line(virtue, currentx, currenty, nextx, nexty, brightness, brightness, 255);
          currentx = nextx;
          currenty = nexty;
          
@@ -3222,7 +3463,11 @@ void goodieaction (int type)   // This function should play some sound, be it th
          break;
       case DESTRUCTOR :
          addcornershots();
-         playsound(shoot_sound);
+         if (playedshootsound == 0)
+         {
+            playsound(shoot_sound);
+            playedshootsound = 1;
+         }
          break;
       case GAMEMOD :
          switch (intrnd(1))
@@ -3327,7 +3572,11 @@ void addkomishot (void)    // Add an upward travelling friendly shot fired from 
          friendlyshot[n].y = komiy;
          friendlyshot[n].speedx = 0;
          friendlyshot[n].speedy = KOMI_SHOT_SPEED * -1;
-         playsound(shoot_sound);
+         if (playedshootsound == 0)
+         {
+            playsound(shoot_sound);
+            playedshootsound = 1;
+         }
          break;
       }
    }
@@ -3529,15 +3778,15 @@ void shufflelevels (void)
    int first, second;
    int temp;
    
-   for (n = 0; n < SHUFFLEDLEVELS; n++)
+   for (n = 0; n < DEFINEDLEVELS; n++)
    {
       shuffledlevels[n] = n + 1;
    }
    
    for (n = 0; n < 1000; n++)
    {
-      first = intrnd(SHUFFLEDLEVELS - 1);
-      second = intrnd(SHUFFLEDLEVELS - 1);
+      first = intrnd(DEFINEDLEVELS - 1);
+      second = intrnd(DEFINEDLEVELS - 1);
       temp = shuffledlevels[first];
       shuffledlevels[first] = shuffledlevels[second];
       shuffledlevels[second] = temp;
@@ -3545,3 +3794,4 @@ void shufflelevels (void)
    
    return;
 }
+

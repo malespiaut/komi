@@ -3,12 +3,15 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "0.95b"
+#define VERSION "1.0"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
 
 // Window size.
 #define WIDTH 640
 #define HEIGHT 480
+
+// Number of predefined levels.
+#define DEFINEDLEVELS 30
 
 // Delay between frames (default)
 #define DEFAULT_DELAY 10
@@ -28,7 +31,10 @@
 #define DROPPER 11
 #define EYEBALL 12
 #define WRAPBALL 13
-#define ENEMYTYPES 14
+#define BOMBER 14
+#define SNIPERLEFT 15
+#define SNIPERRIGHT 16
+#define ENEMYTYPES 17
 
 // Starfield constants.
 #define MAXSTARS 350
@@ -76,7 +82,7 @@
 #define MAX_ENEMIES 30
 #define MAX_COINS 10
 #define MAX_DIAMONDS 4
-#define MAX_ENEMYSHOTS 5
+#define MAX_ENEMYSHOTS 10
 #define MAX_FRIENDLYSHOTS 10
 
 #define GUNNERRELOADTIME 5           // Minimum time between shots for the Gunner.
@@ -111,6 +117,9 @@
 #define DIVE_SPEEDY_DEFAULT 4
 #define DIVE_SPEEDX_DEFAULT 2
 #define ENEMY_SHOT_SPEED_DEFAULT 3
+#define BOMB_SPEED_DEFAULT 5
+
+#define SNIPERSHOTSPEED 3
 
 // Points...
 #define COIN_SCORE 10           // Points for a coin.
@@ -143,8 +152,6 @@
 
 #define LONGESTDELAY 20      // Delay of this or slower makes the speed rect at the title screen all black.
                              // Can still get longer delays with command line arguments.
-
-#define SHUFFLEDLEVELS 28
 
 // Return values for playlevel()
 #define LEVEL_COMPLETE 1
@@ -226,6 +233,11 @@ struct level_struct {
    float divespeedy;              // Diver speed during a dive.
    float divespeedx;
    
+   int bomberhoverlevel;          // Y location for the Bomber enemy type.
+   int bombspeed;                 // Speed its shots travel.
+   
+   int snipersflag;               // Are there snipers in the level?
+   
    float roamerminspeed;          // Min speed for Roamers (also used for some other enemies)
    float roamermaxspeed;          // And the max speed.
 
@@ -273,7 +285,7 @@ int fastdraw = 0;
 
 int gotdelayarg = 0;    // Flag raised if "--delay" is used; prevents delay being read from prefs file.
 
-int shuffledlevels[SHUFFLEDLEVELS];
+int shuffledlevels[DEFINEDLEVELS];
 
 // Position of Komi.
 int komix;
@@ -292,6 +304,8 @@ int shotsavailable;     // How many shots Komi can shoot. Usually zero.
 int fastretract;        // Not currently used. Would be flag for faster tongue retraction.
 int freeze;             // Freeze enemy movement.
 
+int playedshootsound;   // Gets set to 0 every tick, then to 1 when a shot is fired. Prevents multiple playback in a single tick.
+
 int lightningy;         // Position of lightning.
 int lightningcheck;     // Should merge this into levelinfo structure. Move lightning down one pixel every x frames.
 
@@ -303,6 +317,8 @@ int resetmoney;         // Flag for whether to remake money at level start.
                         // Will be Yes if this is a new level, No if we're replaying one we died in.
 
 int givelastlifewarning = 0;    // Whether to give a warning upon next start of level due to last life (if in fullscreen mode)
+
+int havecheated;        // Whether player has cheated this game. Affects whether highscore is saved.
 
 // Now make all the relevant structures declared above.
 
@@ -342,6 +358,9 @@ struct sprite_struct dropper_sprite;
 struct sprite_struct accelerator_sprite;
 struct sprite_struct eyeball_sprite;
 struct sprite_struct wrapball_sprite;
+struct sprite_struct bomber_sprite;
+struct sprite_struct sniperleft_sprite;
+struct sprite_struct sniperright_sprite;
 struct sprite_struct powerup_sprite;
 struct sprite_struct destructor_sprite;
 struct sprite_struct shootpower_sprite;

@@ -48,7 +48,7 @@ int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct spr
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Set sprite's width, height; and create SDL_Surface; and mallocate visibility mask.
+// Create SDL_Surface in the sprite_struct...
 
 void init_spriteimagemap(struct sprite_struct * thesprite, int width, int height)
 {
@@ -126,7 +126,7 @@ void clearsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int ce
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Load a sprite from a BMP file into an instance of my own sprite structure.
+// Load a sprite from a BMP file into an SDL_Surface.
 // Set pixels to be transparent if colour matches all 3 of hider,g,b variables.
 // ie pass 255, 255, 255 for white pixels in the source to be transparent in game.
 //
@@ -171,7 +171,7 @@ void loadsprite (struct sprite_struct * thesprite, char * directory, char * file
    init_spriteimagemap(thesprite, width, height);
    
    thesprite->collisionmask = bitmask_create(width, height);
-   if (thesprite->collisionmask == 0)
+   if (thesprite->collisionmask == NULL)
    {
       fprintf(stderr, "Fatal error: Failed to create collision mask.\n");
       cleanexit(1);
@@ -186,16 +186,16 @@ void loadsprite (struct sprite_struct * thesprite, char * directory, char * file
       for (x = 0; x <= width - 1; x++)
       {
          b = getc(infile);
-	 g = getc(infile);
-	 r = getc(infile);
-	 setrgb(thesprite->pixelmap, x, y, r, g, b);
-	 if (r != hider || g != hideg || b != hideb)
-	 {
-	    if (r != nocollider || g != nocollideg || b != nocollideb)
-	    {
-	       bitmask_setbit(thesprite->collisionmask, x, y);
-	    }
-	 }
+         g = getc(infile);
+         r = getc(infile);
+         setrgb(thesprite->pixelmap, x, y, r, g, b);
+         if (r != hider || g != hideg || b != hideb)
+         {
+            if (r != nocollider || g != nocollideg || b != nocollideb)
+            {
+               bitmask_setbit(thesprite->collisionmask, x, y);
+            }
+         }
       }
    }
    

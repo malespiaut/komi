@@ -30,8 +30,3 @@ After this, you can run the game with the command:
 The locations can be edited in the Makefile (do this before
 compilation, so the app knows where to find the resources).
 
-I'm really eager to hear about people's success or failure in
-getting Komi to build; email feedback to
-acrossman@users.sourceforge.net
-
-Thanks.

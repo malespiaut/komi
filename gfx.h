@@ -33,17 +33,17 @@
 
 // From Bill Kendrick's GPL game Vectoroids (http://www.newbreedsoftware.com/vectoroids)
 // (though something similar exists on the SDL docs site)
-// Puts a pixel on the SDL surface.
+// Puts a pixel on the SDL surface. Surface should be locked.
 
 void putpixel(SDL_Surface * surface, int x, int y, Uint32 pixel)
 {
-  int bpp;
-  Uint8 * p;
+   int bpp;
+   Uint8 * p;
 
-  /* Assuming the X/Y values are within the bounds of this surface... */
+   /* Assuming the X/Y values are within the bounds of this surface... */
   
-  if (x >= 0 && y >= 0 && x < surface->w && y < surface->h)
-    {
+   if (x >= 0 && y >= 0 && x < surface->w && y < surface->h)
+   {
       /* Determine bytes-per-pixel for the surface in question: */
       
       bpp = surface->format->BytesPerPixel;
@@ -61,29 +61,27 @@ void putpixel(SDL_Surface * surface, int x, int y, Uint32 pixel)
          to the pixel value sent in: */
       
       if (bpp == 1)
-        *p = pixel;
-      else if (bpp == 2)
-        *(Uint16 *)p = pixel;
-      else if (bpp == 3)
-        {
-          if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
-            {
-              p[0] = (pixel >> 16) & 0xff;
-              p[1] = (pixel >> 8) & 0xff;
-              p[2] = pixel & 0xff;
-            }
-          else
-            {
-              p[0] = pixel & 0xff;
-              p[1] = (pixel >> 8) & 0xff;
-              p[2] = (pixel >> 16) & 0xff;
-            }
-        }
-      else if (bpp == 4)
-        {
-          *(Uint32 *)p = pixel;
-        }
-    }
+      {
+         *p = pixel;
+      } else if (bpp == 2) {
+         *(Uint16 *)p = pixel;
+      } else if (bpp == 3) {
+         if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+         {
+            p[0] = (pixel >> 16) & 0xff;
+            p[1] = (pixel >> 8) & 0xff;
+            p[2] = pixel & 0xff;
+         } else {
+            p[0] = pixel & 0xff;
+            p[1] = (pixel >> 8) & 0xff;
+            p[2] = (pixel >> 16) & 0xff;
+         }
+      } else if (bpp == 4) {
+         *(Uint32 *)p = pixel;
+      }
+   }
+   
+   return;
 }
 
 
@@ -217,40 +215,10 @@ void line (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, 
 }
 
 
-void rect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue)
-{
-   if ((x2 <= x1) || (y2 <= y1))
-   {
-      fprintf(stderr, "Rect: Failed because of coordinate inversion.\n");
-      return;
-   }
-   
-   // Top and bottom lines.
-   line(bitmapstruct, x1, y1, x2 - 1, y1, red, green, blue);
-   line(bitmapstruct, x1, y2 - 1, x2 - 1, y2 - 1, red, green, blue);
-   
-   if (y2 - y1 > 2)       // Left and right.
-   {
-      // Left.
-      line(bitmapstruct, x1, y1 + 1, x1, y2 - 2, red, green, blue);
-      
-      if (x2 - x1 > 1)    // Right. Test is so doesn't draw it twice if left and right edges are the same.
-      {
-         line(bitmapstruct, x2 - 1, y1 + 1, x2 - 1, y2 - 2, red, green, blue);
-      }
-   }
-
-   if (fastdraw)
-   {
-      updaterectsarray(x1, y1, x2 - x1, y2 - y1);
-   }
-
-   return;
-}
-
-
 void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue)
 {
+   // This should be safe for unlocked surfaces, assuming SDL_FillRect() is safe...
+   
    SDL_Rect therect;
    
    if ((x2 <= x1) || (y2 <= y1))
@@ -277,7 +245,7 @@ void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red,
 
 void cls (SDL_Surface * bitmapstruct, int red, int green, int blue)
 {
-   frect(bitmapstruct, 0, 0, bitmapstruct->w, bitmapstruct->h, red, green, blue);
+   SDL_FillRect(bitmapstruct, NULL, SDL_MapRGB(bitmapstruct->format, red, green, blue));
    return;
 }
 

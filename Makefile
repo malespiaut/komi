@@ -13,7 +13,7 @@ MANPATH=/usr/local/man/man6/
 MIXER=-lSDL_mixer
 SDL_LIB=$(shell sdl-config --static-libs) $(MIXER)
 
-CFLAGS=-Wall -Wno-long-long -pedantic -std=c99 -O2 \
+CFLAGS=-Wall -pedantic -std=c99 -O2 \
 	$(shell sdl-config --cflags) \
 	-DDATAPATH=\"$(DATAPATH)\"
 
