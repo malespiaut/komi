@@ -1,0 +1,17 @@
+Compilation on Windows via MinGW and msys is known to work. But you must:
+
+  * Install the SDL and SDL_Mixer development files.
+
+  * Alter the Makefile so that you have:
+      DATAPATH=komidata/
+    instead of:
+      DATAPATH=/usr/local/share/komidata/
+
+  * Have in your path the program sdl-config. This seems to be distributed in the SDL
+    development libraries for MinGW as i386-mingw32msvc-sdl-config so you'll need to
+    rename it.
+
+  * Run make with msys.
+
+  * Once compiled, you may need to add the SDL.dll and SDL_mixer.dll files to the
+    directory the komi application is in.

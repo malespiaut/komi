@@ -52,6 +52,7 @@ void movelasergun (int n);
 void moveskull (int n);
 void movedropper (int n);
 void moveeyeball (int n);
+void movewrapball (int n);
 
 // From sprites.h
 

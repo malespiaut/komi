@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "0.7b"
+#define VERSION "0.8b"
 
 // Window size.
 #define WIDTH 640
@@ -26,7 +26,8 @@
 #define GUNNER 10
 #define DROPPER 11
 #define EYEBALL 12
-#define ENEMYTYPES 13
+#define WRAPBALL 13
+#define ENEMYTYPES 14
 
 // Starfield constants.
 #define MAXSTARS 350
@@ -45,7 +46,13 @@
 #define TONGUE_G 106
 #define TONGUE_B 226
 
+#define TONGUE_FAST_R 255
+#define TONGUE_FAST_G 0
+#define TONGUE_FAST_B 0
+
 #define TONGUE_WIDTH 6
+
+#define KOMI_SHOT_SPEED 3
 
 // Size of all sprites. Mostly used for bouncing enemies off the sides.
 #define SPRITE_SIZE 32
@@ -76,22 +83,37 @@
 #define BASEPOWERUPPROB 0.00005      // Default chance of a powerup appearing per frame.
 #define POWERUPCUTOFFTIME 10000      // No powerups after this many ticks.
 
+#define FREEZE_TIME 600              // How many ticks a freeze lasts.
+#define FREEZE_WARN_INTERVAL 60      // Intervals between freeze warning sounds.
+#define FREEZE_WARNINGS 3            // How many warnings.
+
 // Constants for the Lasergun enemy.
 #define LASERDURATION 20        // Frames the laser lasts.
 #define LASERWARNTIME 60        // Give warning this many frames before.
 #define LASERWIDTH 2
-#define LASER_R 0               // Colours for laser.
-#define LASER_G 255
-#define LASER_B 50
-#define WARNLASER_R 0           // Colours for warning pre-laser.
-#define WARNLASER_G 100
+#define LASER_R 255             // Colours for laser.
+#define LASER_G 50
+#define LASER_B 0
+#define WARNLASER_R 120         // Colours for warning pre-laser.
+#define WARNLASER_G 50
 #define WARNLASER_B 0
 
 #define SKULLY 352              // Vertical position for Skull enemy.
 
+// Enemy default speeds etc (can be over-ruled when levelinfo is made)
+#define BROWNIAN_MAX_SPEED_DEFAULT 1.5
+#define ROAMER_MIN_SPEED_DEFAULT 0.5
+#define ROAMER_MAX_SPEED_DEFAULT 1
+#define DROPPER_SPEEDY_DEFAULT 5
+#define ELECTRA_OFFSET_DEFAULT -32
+#define GUNNER_SHOOT_PROB_DEFAULT 0.01
+#define DIVE_SPEEDY_DEFAULT 4
+#define DIVE_SPEEDX_DEFAULT 2
+#define ENEMY_SHOT_SPEED_DEFAULT 3
+
+// Points...
 #define COIN_SCORE 10           // Points for a coin.
 #define DIAMOND_SCORE 50        // Points for a diamond.
-
 #define EXTRALIFEPOINTS 1000    // New life every x points.
 
 // Locations of the various images on the title screen.
@@ -99,7 +121,6 @@
 #define MAINTITLE_Y 60
 #define GPL_X 320
 #define GPL_Y 145
-
 #define BOLTSTITLE_X 300
 #define BOLTSTITLE_Y 270
 #define DIAMONDTITLE_X 340
@@ -108,19 +129,17 @@
 #define KOMITITLE_Y 315
 #define DIVERTITLE_X 250
 #define DIVERTITLE_Y 225
-
 #define QUITBUTTON_X 585
 #define QUITBUTTON_Y 380
 #define STARTBUTTON_X 520
 #define STARTBUTTON_Y 440
-
 #define SPEEDTITLE_X 85
 #define SPEEDTITLE_Y 440
-
 #define SPEEDRECTLEFT_X 170
 #define SPEEDRECTTOP_Y 430
 #define SPEEDRECTWIDTH 150
 #define SPEEDRECTHEIGHT 20
+
 #define LONGESTDELAY 20      // Delay of this or slower makes the speed rect at the title screen all black.
                              // Can still get longer delays with command line arguments.
 
@@ -137,7 +156,7 @@
 // Different powerup types.
 #define EXTRALIFE 0
 #define SHOOTPOWER 1
-#define RANDOM 2
+#define GAMEMOD 2
 #define DESTRUCTOR 3
 #define POWERUPTYPES 4
 
@@ -245,15 +264,13 @@ int algorithmicenemies = 0;
 int fullscreen = 0;
 int fastdraw = 0;
 
-// Position of Komi and the speed he moves at.
+// Position of Komi.
 int komix;
 int komiy;
-int komispeedx;
 
 // Tongue.
 int tonguelength;       // Current tongue length (0 if tongue fully retracted).
 int tonguespeed;        // Speed the tongue extends/falls at.
-int fastretract;        // Not currently used. Would be flag for faster tongue retraction.
 
 int caughttype;         // What type of object (if any) caught by the tongue.
 int caughtnumber;       // Caught object's number (ie it could be coin 3).
@@ -261,6 +278,8 @@ int caughtoffsetx;      // Its x-distance from the tongue-tip when caught.
 int caughtoffsety;      // And its y-distance.
 
 int shotsavailable;     // How many shots Komi can shoot. Usually zero.
+int fastretract;        // Not currently used. Would be flag for faster tongue retraction.
+int freeze;             // Freeze enemy movement.
 
 int lightningy;         // Position of lightning.
 int lightningcheck;     // Should merge this into levelinfo structure. Move lightning down one pixel every x frames.
@@ -291,6 +310,7 @@ struct mousemap_struct mousemap = {0,0,0};
 // All the sprite types get their own structure.
 struct sprite_struct komi_sprite;
 struct sprite_struct tip_sprite;
+struct sprite_struct fasttip_sprite;
 struct sprite_struct coin_sprite;
 struct sprite_struct diamond_sprite;
 struct sprite_struct generator_sprite;
@@ -307,6 +327,7 @@ struct sprite_struct gunner_sprite;
 struct sprite_struct dropper_sprite;
 struct sprite_struct accelerator_sprite;
 struct sprite_struct eyeball_sprite;
+struct sprite_struct wrapball_sprite;
 struct sprite_struct powerup_sprite;
 struct sprite_struct destructor_sprite;
 struct sprite_struct shootpower_sprite;
@@ -337,7 +358,7 @@ Mix_Chunk * contactdeath_sound = NULL;
 Mix_Chunk * destructorkill_sound = NULL;
 Mix_Chunk * eat_sound = NULL;
 Mix_Chunk * electricdeath_sound = NULL;
-Mix_Chunk * freezesound_sound = NULL;
+Mix_Chunk * freeze_sound = NULL;
 Mix_Chunk * gameover_sound = NULL;
 Mix_Chunk * laser_sound = NULL;
 Mix_Chunk * laserentry_sound = NULL;

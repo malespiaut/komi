@@ -1,3 +1,17 @@
+From 0.7b to 0.8b
+-----------------
+
+Save screenshot to current directory instead of data directory.
+
+Added freeze and fast-tongue-retract powerups.
+
+Some changes in sprites.
+
+Added wrapball enemy type (though it's only in one level).
+
+Levels specifically defined up to level 28. If you get this far you are a God. :-)
+
+
 From 0.6a to 0.7b
 -----------------
 

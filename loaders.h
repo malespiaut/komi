@@ -6,6 +6,7 @@ void loadsprites (void)
 
    loadsprite(&komi_sprite, filepath, "sprites_komi.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    loadsprite(&tip_sprite, filepath, "sprites_tip.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   loadsprite(&fasttip_sprite, filepath, "sprites_fasttip.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    
    loadsprite(&tonguemask_sprite, filepath, "sprites_tonguemask.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    loadsprite(&pickupmask_sprite, filepath, "sprites_pickupmask.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
@@ -41,9 +42,11 @@ void loadsprites (void)
    spritemap[DROPPER] = &dropper_sprite;
    loadsprite(&eyeball_sprite, filepath, "sprites_eyeball.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    spritemap[EYEBALL] = &eyeball_sprite;
+   loadsprite(&wrapball_sprite, filepath, "sprites_wrapball.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   spritemap[WRAPBALL] = &wrapball_sprite;
 
    loadsprite(&powerup_sprite, filepath, "sprites_powerup.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
-   powerupspritemap[RANDOM] = &powerup_sprite;
+   powerupspritemap[GAMEMOD] = &powerup_sprite;
    
    loadsprite(&destructor_sprite, filepath, "sprites_destructor.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    powerupspritemap[DESTRUCTOR] = &destructor_sprite;
@@ -83,7 +86,7 @@ void loadsounds (void)
    loadsound(&destructorkill_sound, filepath, "sounds_destructorkill.wav");
    loadsound(&eat_sound, filepath, "sounds_eat.wav");
    loadsound(&electricdeath_sound, filepath, "sounds_electricdeath.wav");
-   loadsound(&freezesound_sound, filepath, "sounds_freeze.wav");
+   loadsound(&freeze_sound, filepath, "sounds_freeze.wav");
    loadsound(&gameover_sound, filepath, "sounds_gameover.wav");
    loadsound(&laser_sound, filepath, "sounds_laser.wav");
    loadsound(&laserentry_sound, filepath, "sounds_laserentry.wav");

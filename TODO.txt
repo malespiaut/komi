@@ -1,4 +1,0 @@
-
-Define levels up to about 40.
-Make sure all enemies can be generated algorithmically.
-Make sure enemies can't stay directly underneath top diamonds.
