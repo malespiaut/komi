@@ -17,7 +17,7 @@ int playerdeath (void);
 int lightningdeath (void);
 void cleanexit (int exitstatus);
 void loadsound(Mix_Chunk ** thesound, char * directory, char * filename);
-void playsound (int channel, Mix_Chunk * thesound, int loops);
+void playsound (Mix_Chunk * thesound);
 void drawmenu (void);
 void updatekeymap (void);
 void updatemousemap (void);
@@ -36,6 +36,9 @@ void goodieaction (int type);
 void addcornershots (void);
 void addkomishot (void);
 int intrnd (int max);
+void addscore (int num);
+void drawspeedrect (void);
+void checkspeedadjust (void);
 
 void movescroller (int n);
 void movediver (int n);
@@ -48,6 +51,7 @@ void moveelectra (int n);
 void movelasergun (int n);
 void moveskull (int n);
 void movedropper (int n);
+void moveeyeball (int n);
 
 // From sprites.h
 

@@ -1,5 +1,19 @@
+From 0.6a to 0.7b
+-----------------
+
+Added eyeball enemy type.
+
+Extra life every 1000 points.
+
+Added some comments to the code.
+
+Can now set delay between frames directly with "--delay 10" (for example).
+
+Can adjust speed directly in the title screen.
+
+
 From 0.5a to 0.6a
-------------------
+-----------------
 
 Implemented "--fastdraw" option, which means only altered parts of the screen should get redrawn every frame.
 

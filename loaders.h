@@ -39,6 +39,8 @@ void loadsprites (void)
    spritemap[ACCELERATOR] = &accelerator_sprite;
    loadsprite(&dropper_sprite, filepath, "sprites_dropper.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    spritemap[DROPPER] = &dropper_sprite;
+   loadsprite(&eyeball_sprite, filepath, "sprites_eyeball.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   spritemap[EYEBALL] = &eyeball_sprite;
 
    loadsprite(&powerup_sprite, filepath, "sprites_powerup.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    powerupspritemap[RANDOM] = &powerup_sprite;
@@ -65,6 +67,7 @@ void loadsprites (void)
    loadsprite(&start_title, filepath, "titles_start.bmp", 240, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&quit_title, filepath, "titles_quit.bmp", 96, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&gpl_title, filepath, "titles_gpl.bmp", 480, 56, 0, 0, 0, 0, 0, 0);
+   loadsprite(&speed_title, filepath, "titles_speed.bmp", 136, 48, 0, 0, 0, 0, 0, 0);
    
    return;
 }

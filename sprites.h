@@ -24,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
 // Interface to Ulf Ekstrom's bitmask overlap function.
+// Do the 2 sprites (or specifically, their collisionmasks) overlap?
 
 
 int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct sprite_struct * sprite2, int x2, int y2)
@@ -46,6 +47,8 @@ int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct spr
 
 
 ///////////////////////////////////////////////////////////////////////////////////
+//
+// Set sprite's width, height and allocate memory for pixels and visibility mask.
 
 void init_spriteimagemap(struct sprite_struct * thesprite, int width, int height)
 {

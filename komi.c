@@ -63,30 +63,14 @@ int main (int argc, char * argv[]) {
 
    for (n = 1; n < argc; n++)
    {
-      if (strcmp(argv[n], "--fullspeed") == 0)
+      if (strcmp(argv[n], "--delay") == 0 && n < argc - 1)
       {
-         fullspeedflag = 1;
-         delay = 1;            // But this will not be used in the main loop.
-      }
-      if (strcmp(argv[n], "--superfast") == 0)
-      {
-         delay = 4;
-      }
-      if (strcmp(argv[n], "--fast") == 0)
-      {
-         delay = 8;
-      }
-      if (strcmp(argv[n], "--medium") == 0)
-      {
-         delay = 12;
-      }
-      if (strcmp(argv[n], "--slow") == 0)
-      {
-         delay = 16;
-      }
-      if (strcmp(argv[n], "--glacial") == 0)
-      {
-         delay = 20;
+         delay = atoi(argv[n + 1]);
+         if (delay < 0 || delay > 50)
+         {
+            delay = DEFAULT_DELAY;
+            fprintf(stderr, "Please enter a delay value between 0 and 50.\n");
+         }
       }
       if (strcmp(argv[n], "--nostars") == 0)
       {
@@ -121,7 +105,7 @@ int main (int argc, char * argv[]) {
       {
          invincible = 1;
       }
-      if (strcmp(argv[n], "--help") == 0 || strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--usage") == 0)
+      if (strcmp(argv[n], "--help") == 0 || strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--usage") == 0 || strcmp(argv[n], "-help") == 0 || strcmp(argv[n], "help") == 0)   // Accept multiple help commands....
       {
          printhelp();
          exit(0);
@@ -223,6 +207,8 @@ void menu (void)
             drawmenu();
          } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.width / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.height / 2) {
             cleanexit(0);
+         } else {
+            checkspeedadjust();
          }
       }
       SDL_Delay(1);
@@ -315,7 +301,7 @@ int playlevel (void)
    {
       if (enemy[n].exists && enemy[n].type == LASERGUN)
       {
-         playsound(-1, laserentry_sound, 0);
+         playsound(laserentry_sound);
          break;
       }
    }
@@ -334,7 +320,7 @@ int playlevel (void)
          lightningy++;
          if (lightningy >= levelinfo.fastlightningy)
          {
-            playsound(-1, lightningwarning_sound, 0);
+            playsound(lightningwarning_sound);
          }
       }
       
@@ -342,15 +328,15 @@ int playlevel (void)
       {
          dostars();
       }
-         
-      if (fullspeedflag == 0)
+      
+      notedtime = SDL_GetTicks();
+      if (delay > 0)
       {
          if (hog)
          {
-            notedtime = SDL_GetTicks();
             while (SDL_GetTicks() - notedtime < delay)
             {
-               ;
+               ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;     // I assume this gets us some NOOPs.
             }
          } else {
             SDL_Delay(delay);
@@ -374,7 +360,7 @@ int playlevel (void)
             SDL_Delay(500);
             if (lives == 1)
             {
-               playsound(-1, gameover_sound, 0);
+               playsound(gameover_sound);
             }
             fadeout();
             return DEATH;
@@ -402,7 +388,7 @@ int playlevel (void)
       }
       if (keymap.pause)
       {
-         playsound(-1, pause_sound, 0);
+         playsound(pause_sound);
          keymap.pause = 0;
          keymap.left1 = 0;
          keymap.right1 = 0;
@@ -520,13 +506,12 @@ void movesprites (void)
          if (coin[n].y > komiy - 10 || tonguelength == 0)
          {
             coin[n].exists = 0;
-            score += COIN_SCORE;
-            updatetitlebar();
+            addscore(COIN_SCORE);
             caughttype = 0;
             caughtnumber = -1;
             tonguelength = 0;
             tonguespeed = 0;
-            playsound(-1, eat_sound, 0);
+            playsound(eat_sound);
          }
       } else {
          coin[n].x += coin[n].speedx;
@@ -563,13 +548,12 @@ void movesprites (void)
          if (diamond[n].y > komiy - 10 || tonguelength == 0)
          {
             diamond[n].exists = 0;
-            score += DIAMOND_SCORE;
-            updatetitlebar();
+            addscore(DIAMOND_SCORE);
             caughttype = 0;
             caughtnumber = -1;
             tonguelength = 0;
             tonguespeed = 0;
-            playsound(-1, eat_sound, 0);
+            playsound(eat_sound);
          }
       } else {
          diamond[n].x += diamond[n].speedx;
@@ -627,7 +611,7 @@ void movesprites (void)
             {
                enemy[i].exists = 0;
                friendlyshot[n].exists = 0;
-               playsound(-1, destructorkill_sound, 0);
+               playsound(destructorkill_sound);
                break;                             // Don't kill multiple enemies with one shot.
             }
          }
@@ -689,7 +673,7 @@ void movesprites (void)
             goodie.speedx = 2;
          }
          goodie.speedy = 1;
-         playsound(-1, powerup_sound, 0);
+         playsound(powerup_sound);
          break;
       }
    }
@@ -735,6 +719,9 @@ void movesprites (void)
                break;
             case DROPPER :
                movedropper(n);
+               break;
+            case EYEBALL :
+               moveeyeball(n);
                break;
          }
       }
@@ -933,7 +920,7 @@ void moveaccelerator (int n)
    
    if (levelinfo.guardianaccels)
    {
-      enemy[n].y = lightningy + enemy[n].floatvar2;
+      enemy[n].y = lightningy + enemy[n].intvar;
    }
    
    enemy[n].x += enemy[n].speedx;
@@ -1000,7 +987,7 @@ void movegunner (int n)
                enemyshot[i].speedx = enemyshot[i].speedx / (fabs(enemyshot[i].speedy) / levelinfo.enemyshotbasespeed);
                enemyshot[i].speedy = enemyshot[i].speedy / (fabs(enemyshot[i].speedy) / levelinfo.enemyshotbasespeed);
             }
-            playsound(-1, shoot_sound, 0);
+            playsound(shoot_sound);
             enemy[n].intvar = tick;
             break;
          }
@@ -1058,11 +1045,11 @@ void movelasergun (int n)
    
    if (tick % enemy[n].intvar == enemy[n].intvar - LASERWARNTIME)
    {
-      playsound(-1, laserpowerup_sound, 0);
+      playsound(laserpowerup_sound);
    }
    if (tick % enemy[n].intvar == 0 && tick >= enemy[n].intvar)
    {
-      playsound(-1, laser_sound, 0);
+      playsound(laser_sound);
    }
    
    return;
@@ -1117,6 +1104,52 @@ void movedropper (int n)
       } else {
          enemy[n].intvar = 1;
       }
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void moveeyeball (int n)
+{
+   if (tonguelength)
+   {
+      enemy[n].speedx = komix - enemy[n].x;
+      enemy[n].speedy = (komiy - tonguelength) - enemy[n].y;
+      if (fabs(enemy[n].speedx) > levelinfo.enemyshotbasespeed)
+      {
+         enemy[n].speedy = enemy[n].speedy / (fabs(enemy[n].speedx) / enemy[n].floatvar);
+         enemy[n].speedx = enemy[n].speedx / (fabs(enemy[n].speedx) / enemy[n].floatvar);
+      }
+      if (fabs(enemy[n].speedy) > levelinfo.enemyshotbasespeed)
+      {
+         enemy[n].speedx = enemy[n].speedx / (fabs(enemy[n].speedy) / enemy[n].floatvar);
+         enemy[n].speedy = enemy[n].speedy / (fabs(enemy[n].speedy) / enemy[n].floatvar);
+      }
+   }
+   enemy[n].x += enemy[n].speedx;
+   enemy[n].y += enemy[n].speedy;
+   
+   if (enemy[n].x < SPRITE_SIZE / 2)
+   {
+      enemy[n].x = SPRITE_SIZE / 2;
+      enemy[n].speedx = fabs(enemy[n].speedx);
+   }
+   if (enemy[n].x > WIDTH - (SPRITE_SIZE / 2))
+   {
+      enemy[n].x = WIDTH - (SPRITE_SIZE / 2);
+      enemy[n].speedx = fabs(enemy[n].speedx) * -1;
+   }
+   if (enemy[n].y < SPRITE_SIZE / 2)
+   {
+      enemy[n].y = SPRITE_SIZE / 2;
+      enemy[n].speedy = fabs(enemy[n].speedy);
+   }
+   if (enemy[n].y > HEIGHT - (SPRITE_SIZE / 2))
+   {
+      enemy[n].y = HEIGHT - (SPRITE_SIZE / 2);
+      enemy[n].speedy = fabs(enemy[n].speedy) * -1;
    }
    
    return;
@@ -1382,7 +1415,7 @@ void checktonguepickup (void)
             caughtnumber = n;
             caughtoffsetx = coin[n].x - komix;
             caughtoffsety = coin[n].y - (komiy - tonguelength);
-            playsound(-1, stick_sound, 0);
+            playsound(stick_sound);
             if (fastretract == 0)
             {
                tonguespeed = TONGUE_SPEED * -1;
@@ -1404,7 +1437,7 @@ void checktonguepickup (void)
             caughtnumber = n;
             caughtoffsetx = diamond[n].x - komix;
             caughtoffsety = diamond[n].y - (komiy - tonguelength);
-            playsound(-1, stick_sound, 0);
+            playsound(stick_sound);
             if (fastretract == 0)
             {
                tonguespeed = TONGUE_SPEED * -1;
@@ -1424,7 +1457,7 @@ void checktonguepickup (void)
          caughtnumber = 0;
          caughtoffsetx = goodie.x - komix;
          caughtoffsety = goodie.y - (komiy - tonguelength);
-         playsound(-1, stick_sound, 0);
+         playsound(stick_sound);
          if (fastretract == 0)
          {
             tonguespeed = TONGUE_SPEED * -1;
@@ -1561,7 +1594,8 @@ void choosenumbers (void)
             levelinfo.enemycount[SCROLLERLEFT] = 2;
             levelinfo.enemycount[SCROLLERRIGHT] = 2;
             levelinfo.enemycount[BROWNIAN] = 1;
-            levelinfo.enemycount[BOUNCER] = 2;
+            levelinfo.enemycount[BOUNCER] = 1;
+            levelinfo.enemycount[EYEBALL] = 1;
             break;
          case 5 :
             levelinfo.electrasflag = 1;
@@ -1604,12 +1638,11 @@ void choosenumbers (void)
             levelinfo.electraoffset = 0;
             break;
          case 11 :
-            levelinfo.enemycount[SCROLLERLEFT] = 3;
-            levelinfo.enemycount[SCROLLERRIGHT] = 3;
-            levelinfo.enemycount[ROAMER] = 3;
-            levelinfo.enemycount[BROWNIAN] = 2;
-            levelinfo.enemycount[DIVER] = 1;
-            lightningcheck = 100000000;
+            levelinfo.enemycount[SCROLLERLEFT] = 2;
+            levelinfo.enemycount[SCROLLERRIGHT] = 2;
+            levelinfo.enemycount[ROAMER] = 2;
+            levelinfo.enemycount[EYEBALL] = 1;
+            levelinfo.enemycount[GUNNER] = 1;
             break;
          case 12 :
             levelinfo.electrasflag = 1;
@@ -1674,7 +1707,8 @@ void choosenumbers (void)
             break;
          case 22 :
             levelinfo.enemycount[DROPPER] = 5;
-            levelinfo.enemycount[GUNNER] = 2;
+            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.enemycount[EYEBALL] = 1;
             lightningcheck = 100000000;
               coins = 6;
               diamonds = 3;
@@ -1706,7 +1740,7 @@ void choosenumbers (void)
    
 ///////////////////////////////////////////////////////////////////////////////////
 
-void algorithmicenemynumbers (int thislevel)
+void algorithmicenemynumbers (int thislevel)   // Set enemy numbers algorithmically. Only called if numbers not predefined above.
 {
 
    if (thislevel % 5 == 0) levelinfo.electrasflag = 1;
@@ -1741,6 +1775,8 @@ void algorithmicenemynumbers (int thislevel)
    if (levelinfo.enemycount[DIVER] > 5) levelinfo.enemycount[DIVER] = 5;
    if (thislevel % 4 == 1) levelinfo.enemycount[GUNNER] = 2;
    if (thislevel % 5 == 4) levelinfo.enemycount[BOUNCER] = (thislevel / 10) + 1;
+   if (thislevel % 3 == 1 || thislevel % 7 == 1) levelinfo.enemycount[EYEBALL] = 1;
+   if (thislevel % 8 == 3) levelinfo.enemycount[DROPPER] = 3;
    
    if (thislevel > 10) levelinfo.topdiamonds = 0;
    
@@ -1749,7 +1785,43 @@ void algorithmicenemynumbers (int thislevel)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void makelevel (void)
+void makelevel (void)    // Set the various objects into existence.
+
+/*
+The various enemies use the 2 intvar variables and the floatvar
+variable for different things. Here's the list...
+
+DROPPER:
+Uses intvar as a flag for whether it's allowed to fall. Set to zero so
+it can't fall if Komi is underneath it at level start. Gets set to one
+as soon as Komi is not underneath it.
+
+DIVER:
+Uses intvar as its countdown to diving, and resets it to the value in
+intvar2 when the dive is complete.
+
+BOUNCER:
+Uses floatvar, which stores its maximum vertical speed.
+
+ACCELERATOR:
+Uses floatvar for its maximum speed.
+Uses intvar for its offset from lightning, if in Guardian mode.
+
+GUNNER:
+Uses intvar to store tick (frame) it last fired in. Used so that there's
+a delay between shots.
+
+ELECTRA:
+Uses intvar to store the enemy-number of it's target Electra.
+
+LASERGUN:
+Uses intvar to store what tick it should fire its laser.
+
+EYEBALL:
+Uses floatvar to store it's maximum speed.
+
+*/
+
 {
    int n;
    int t;
@@ -1939,7 +2011,7 @@ void makelevel (void)
             enemy[t].floatvar = n + 2;
             if (levelinfo.guardianaccels)
             {
-               enemy[t].floatvar2 = lightningy - enemy[t].y;    // Offset from lightning.
+               enemy[t].intvar = lightningy - enemy[t].y;    // Offset from lightning.
             }
             
             break;
@@ -2038,13 +2110,31 @@ void makelevel (void)
          }
       }
    }
+
+   for (n = 0; n < levelinfo.enemycount[EYEBALL]; n++)
+   {
+      for (t = 0; t < MAX_ENEMIES; t++)
+      {
+         if (enemy[t].exists == 0)
+         {
+            enemy[t].exists = 1;
+            enemy[t].type = EYEBALL;
+            enemy[t].x = (rnd() * (WIDTH - (SPRITE_SIZE * 2))) + SPRITE_SIZE;
+            enemy[t].y = (rnd() * (lightningy - SPRITE_SIZE)) + (SPRITE_SIZE / 2);
+            enemy[t].speedx = 0;
+            enemy[t].speedy = 0;
+            enemy[t].floatvar = 2.5 + ((float)n / 2);
+            break;
+         }
+      }
+   }
             
    return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-int playerdeath (void)
+int playerdeath (void)      // Return 1 if player is dead.
 {
    int komideadflag = 0;
    int n;
@@ -2052,7 +2142,7 @@ int playerdeath (void)
    if (lightningdeath())
    {
       komideadflag = 1;
-      playsound(-1, electricdeath_sound, 0);
+      playsound(electricdeath_sound);
       return 1;                  // Must return now else we'll get the standard death sound.
    }
    
@@ -2131,7 +2221,7 @@ int playerdeath (void)
             if (enemy[n].y > komiy - tonguelength && enemy[n].x < komix && enemy[enemy[n].intvar].x > komix)
             {
                komideadflag = 1;
-               playsound(-1, electricdeath_sound, 0);
+               playsound(electricdeath_sound);
                return 1;                  // Must return now else we'll get the standard death sound.
             }
          }
@@ -2152,7 +2242,7 @@ int playerdeath (void)
    
    if (komideadflag)
    {
-      playsound(-1, contactdeath_sound, -1);
+      playsound(contactdeath_sound);
    }
    return komideadflag;
 }
@@ -2172,7 +2262,7 @@ int lightningdeath (void)     // This will be called from several places for aes
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void cleanexit (int exitstatus)
+void cleanexit (int exitstatus)    // Exit cleanly, shutting down SDL.
 {
    if (nosound == 0)
    {
@@ -2185,6 +2275,7 @@ void cleanexit (int exitstatus)
 ///////////////////////////////////////////////////////////////////////////////////
 //
 // Mmmm. Pointers to pointers. Yuk...
+// Load the sound if it exists.
 
 void loadsound(Mix_Chunk ** thesound, char * directory, char * filename)
 {
@@ -2213,7 +2304,7 @@ void loadsound(Mix_Chunk ** thesound, char * directory, char * filename)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void playsound (int channel, Mix_Chunk * thesound, int loops)
+void playsound (Mix_Chunk * thesound)   // Pass sound pointer to Mix_PlayChannel() assuming sound is on.
 {
    if (nosound == 0)
    {
@@ -2224,9 +2315,10 @@ void playsound (int channel, Mix_Chunk * thesound, int loops)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void drawmenu (void)
+void drawmenu (void)    // Draw all the graphical stuff on the title screen. Locations predefined.
 {
-   rects = 0;
+   rects = 0;   // In case drawing all this would push rects over the max.
+
    cls(virtue, 0, 0, 0);
    drawsprite(&maintitle_title, virtue, MAINTITLE_X, MAINTITLE_Y);
    drawsprite(&gpl_title, virtue, GPL_X, GPL_Y);
@@ -2242,7 +2334,56 @@ void drawmenu (void)
    drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X - (bolts_title.width / 2)) - ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
    drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X + (bolts_title.width / 2)) + ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
    
+   drawsprite(&speed_title, virtue, SPEEDTITLE_X, SPEEDTITLE_Y);
+   drawspeedrect();
+   
    SDL_Flip(virtue);
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void drawspeedrect (void)   // The rect showing the speed at the bottom left of the menu.
+{
+   rects = 0;   // In case drawing this would push rects over the max.
+
+   int fillx1, fillx2, filly1, filly2;
+   
+   // Clear it first...
+   frect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 0, 0, 0);
+   
+   rect(virtue, SPEEDRECTLEFT_X, SPEEDRECTTOP_Y, SPEEDRECTLEFT_X + SPEEDRECTWIDTH, SPEEDRECTTOP_Y + SPEEDRECTHEIGHT, 150, 150, 150);
+   if (delay < LONGESTDELAY)
+   {
+      fillx1 = SPEEDRECTLEFT_X;
+      filly1 = SPEEDRECTTOP_Y;
+      fillx2 = SPEEDRECTLEFT_X + ((LONGESTDELAY - delay) * ((float)SPEEDRECTWIDTH / LONGESTDELAY));
+      filly2 = filly1 + SPEEDRECTHEIGHT;
+   
+      frect(virtue, fillx1, filly1, fillx2, filly2, 0, 100, 150);
+   }
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void checkspeedadjust (void)
+{
+   int leftx, rightx, topy, bottomy;
+   
+   leftx = SPEEDRECTLEFT_X;
+   topy = SPEEDRECTTOP_Y;
+   rightx = SPEEDRECTLEFT_X + SPEEDRECTWIDTH;
+   bottomy = SPEEDRECTTOP_Y + SPEEDRECTHEIGHT;
+   
+   if (mousemap.clickx > leftx - 20 && mousemap.clickx < rightx + 20 && mousemap.clicky > topy && mousemap.clicky < bottomy)
+   {
+      delay = LONGESTDELAY - ((mousemap.clickx - leftx) / ((float)SPEEDRECTWIDTH / LONGESTDELAY));
+      if (delay < 0) delay = 0;
+      if (delay > LONGESTDELAY) delay = LONGESTDELAY;
+      drawspeedrect();
+      SDL_Flip(virtue);
+   }
    return;
 }
 
@@ -2297,7 +2438,7 @@ void updatekeymap (void)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void updatemousemap (void)
+void updatemousemap (void)   // Keeps track of whether the mouse button is down, and what position it clicked on.
 {
    if (event.type == SDL_MOUSEBUTTONDOWN)
    {
@@ -2312,7 +2453,7 @@ void updatemousemap (void)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void manageevents (void)
+void manageevents (void)   // Manage relevant keyboard, mouse, and quit events.
 {
    while (SDL_PollEvent(&event))
    {
@@ -2330,7 +2471,7 @@ void manageevents (void)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-int leveldone (void)
+int leveldone (void)     // Return 1 if there are no coins or diamonds on the level any more.
 {
    int n;
    
@@ -2406,7 +2547,7 @@ void resetstar (int n)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void doelectricity (void)
+void doelectricity (void)  // Draw lightning between left and right sides, at vertical position lightningy.
 {
    int n;
    int currentx, currenty;
@@ -2485,7 +2626,7 @@ void doelectricity (void)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-int sign (float value)
+int sign (float value)    // Returns sign of value, either -1 for negative, 1 for positive, or 0 for zero.
 {
    if (value < 0) return -1;
    if (value > 0) return 1;
@@ -2494,14 +2635,15 @@ int sign (float value)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-float rnd (void)
+float rnd (void)    // Random number between 0 and 1.
 {
    return (float)rand() / RAND_MAX;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void fadeout (void)
+                       // Called when Komi dies or level completed.
+void fadeout (void)    // Not so much a fade as a series of black lines...
 {
    int n;
    
@@ -2511,7 +2653,7 @@ void fadeout (void)
       if (n % 10 == 0)
       {
          SDL_Flip(virtue);
-         SDL_Delay(10);
+         SDL_Delay(5);
          manageevents();
       }
    }
@@ -2522,7 +2664,7 @@ void fadeout (void)
       if ((n + 1) % 10 == 0)
       {
          SDL_Flip(virtue);
-         SDL_Delay(10);
+         SDL_Delay(5);
          manageevents();
       }
    }
@@ -2557,7 +2699,7 @@ void screenshot (SDL_Surface * surface, char * directory, char * filename)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void doelectrabolts (int x1, int y, int x2)
+void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightning between (x1, y) and (x2, y)
 {
    int n;
    int currentx, currenty;
@@ -2611,7 +2753,9 @@ void doelectrabolts (int x1, int y, int x2)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void dobrokenlightning (int leftelectrax, int rightelectrax)
+void dobrokenlightning (int leftelectrax, int rightelectrax)   // Draw lightning between left and right sides
+                                                               // But draw nothing between x and y.
+                                                               // Called when Electras exist and are level with lightning.
 {
 
    int n;
@@ -2689,7 +2833,7 @@ void dobrokenlightning (int leftelectrax, int rightelectrax)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void drawskullpull (int clearflag, int n)
+void drawskullpull (int clearflag, int n)   // Draw the circles from the Skull to Komi.
 {
    int pullstarty, pullstartx;
    int i;
@@ -2739,6 +2883,7 @@ void drawskullpull (int clearflag, int n)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
+                               // Do whatever is done by the powerup Komi has just captured.
 void goodieaction (int type)   // This function should play some sound, be it the standard eat sound or something else.
 {
    switch (type)
@@ -2746,15 +2891,15 @@ void goodieaction (int type)   // This function should play some sound, be it th
       case EXTRALIFE :
          lives++;
          updatetitlebar();
-         playsound(-1, oneup_sound, 0);
+         playsound(oneup_sound);
          break;
       case SHOOTPOWER :
          shotsavailable += 3;
-         playsound(-1, eat_sound, 0);
+         playsound(eat_sound);
          break;
       case DESTRUCTOR :
          addcornershots();
-         playsound(-1, shoot_sound, 0);
+         playsound(shoot_sound);
          break;
       case RANDOM :
          switch (intrnd(2))
@@ -2783,7 +2928,7 @@ void goodieaction (int type)   // This function should play some sound, be it th
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void addcornershots (void)
+void addcornershots (void)   // Add 4 inbound friendly shots - one at each corner. Used if we get the "destructor" powerup.
 {
    int n;
 
@@ -2841,7 +2986,7 @@ void addcornershots (void)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void addkomishot (void)
+void addkomishot (void)    // Add an upward travelling friendly shot fired from Komi's position.
 {
    int n;
 
@@ -2854,7 +2999,7 @@ void addkomishot (void)
          friendlyshot[n].y = komiy;
          friendlyshot[n].speedx = 0;
          friendlyshot[n].speedy = -3;
-         playsound(-1, shoot_sound, 0);
+         playsound(shoot_sound);
          break;
       }
    }
@@ -2873,3 +3018,20 @@ int intrnd (int max)    // Return integer between 0 and max inclusive.
    return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+
+                           // Add num to score and update the titlebar.
+void addscore (int num)    // Also checks if we're over the points required to get a new life.
+{
+   int initialscore;
+   
+   initialscore = score;
+   score += num;
+   if (initialscore / EXTRALIFEPOINTS < score / EXTRALIFEPOINTS)
+   {
+      lives++;
+      playsound(oneup_sound);
+   }
+   updatetitlebar();
+   return;
+}

@@ -27,9 +27,9 @@ Boston, MA  02111-1307  USA\n\n"
 #define INFO_HELP "\
 Komi options:\n\
 \n\
-  Speed choices:\n\
-     --fullspeed  ||  --fast    ||  --slow\n\
-     --superfast  ||  --medium  ||  --glacial\n\
+  Speed:\n\
+     --delay <x>        (wait x milliseconds between frames,\n\
+                         so lower is faster)\n\
 \n\
   Technical options:\n\
      --fastdraw         (experimental)\n\
