@@ -46,6 +46,7 @@ int playmusic (char * directory, char * filename, int loops);
 void musicdone (void);
 void playnextsong (void);
 void shufflelevels (void);
+void setprefsdir (void);
 
 void movescroller (int n);
 void movediver (int n);

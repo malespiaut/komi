@@ -3,8 +3,9 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "1.0"
+#define VERSION "1.01"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
+#define PREFSNAME ".komirc"
 
 // Window size.
 #define WIDTH 640
@@ -414,7 +415,8 @@ Mix_Music * music = NULL;
 // Path to the data (sound files, graphics, etc). 
 #ifdef DATAPATH
 char filepath[TEXTBUFFERSIZE] = DATAPATH;
+char prefsdir[TEXTBUFFERSIZE] = DATAPATH;
 #else
 char filepath[TEXTBUFFERSIZE] = "komidata/"
+char prefsdir[TEXTBUFFERSIZE] = "komidata/"
 #endif
-

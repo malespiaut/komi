@@ -65,6 +65,8 @@ int main (int argc, char * argv[]) {
    // Note that each sprite uses 2 update-rects - one for it's current position, and one for it's old one.
    assert(MAXRECTS > (MAX_ENEMIES * 2) + (MAX_COINS * 2) + (MAX_DIAMONDS * 2) + (MAX_ENEMYSHOTS * 2) + (MAX_FRIENDLYSHOTS * 2) + 50);
 
+   setprefsdir();   // Determine the directory where prefs are saved.
+
    for (n = 1; n < argc; n++)
    {
       if (strcmp(argv[n], "--delay") == 0 && n < argc - 1)
@@ -80,7 +82,7 @@ int main (int argc, char * argv[]) {
       }
       if (strcmp(argv[n], "--resetprefs") == 0)
       {
-         saveprefs(filepath, "prefs");
+         saveprefs(prefsdir, PREFSNAME);
       }
       if (strcmp(argv[n], "--nostars") == 0)
       {
@@ -156,9 +158,9 @@ int main (int argc, char * argv[]) {
       }
    }
    
-   loadprefs(filepath, "prefs");
-   saveprefs(filepath, "prefs");    // In case of command line arguments needing to be saved.
-                                    // Or in case of first-run.
+   loadprefs(prefsdir, PREFSNAME);
+   saveprefs(prefsdir, PREFSNAME);    // In case of command line arguments needing to be saved.
+                                      // Or in case of first-run.
    
    if (nosound == 0)
    {
@@ -334,7 +336,7 @@ void game (void)
    if (score > highscore && havecheated == 0 && invincible == 0)
    {
       highscore = score;
-      saveprefs(filepath, "prefs");
+      saveprefs(prefsdir, PREFSNAME);
    }
    
    return;
@@ -1878,6 +1880,8 @@ void choosenumbers (void)
             levelinfo.enemycount[BOMBER] = 1;
             levelinfo.roamermaxspeed = 2;
             levelinfo.topdiamonds = 0;
+               diamonds = 1;
+               coins = 2;
             break;
          case 2 :
             levelinfo.enemycount[SCROLLERLEFT] = 1;
@@ -1885,6 +1889,8 @@ void choosenumbers (void)
             levelinfo.enemycount[BOUNCER] = 1;
             levelinfo.enemycount[ROAMER] = 1;
             levelinfo.enemycount[GUNNER] = 1;
+               diamonds = 2;
+               coins = 2;
             break;
          case 3 :
             levelinfo.enemycount[SCROLLERLEFT] = 1;
@@ -2879,7 +2885,7 @@ void checkspeedadjust (void)
       delay = LONGESTDELAY - ((mousemap.clickx - leftx) / ((float)SPEEDRECTWIDTH / LONGESTDELAY));
       if (delay < 0) delay = 0;
       if (delay > LONGESTDELAY) delay = LONGESTDELAY;
-      saveprefs(filepath, "prefs");
+      saveprefs(prefsdir, PREFSNAME);
       drawspeedrect();
       SDL_UpdateRect(virtue, 0, 0, 0, 0);
    }
@@ -3795,3 +3801,27 @@ void shufflelevels (void)
    return;
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+
+void setprefsdir (void)    // Try to get a sensible directory to save prefs to.
+                           // Set the global "prefsdir" to it, for use by loadprefs() and saveprefs()
+{
+   char * dir = NULL;
+
+   // Unix has $HOME
+   if ((dir = getenv("HOME")) != NULL)
+   {
+      snprintf(prefsdir, sizeof(prefsdir) - 1, "%s/", dir);
+      return;
+   }
+
+    // Windows has APPDATA
+   if ((dir = getenv("APPDATA")) != NULL) 
+   {
+      snprintf(prefsdir, sizeof(prefsdir) - 1, "%s/", dir);
+      return;
+   }
+
+   // No variables - just return. prefsdir will be whatever it was set to in declarations.h
+   return;
+}

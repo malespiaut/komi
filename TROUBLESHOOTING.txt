@@ -48,6 +48,18 @@ Komi is a hard game. :-)
 Certainly when played at a proper speed...
 
 
+Installation and data files
+---------------------------
+
+The directory where Komi finds its data files is set at compile time. By default, it's /usr/local/share/komidata/ but you can change this to be whatever you like by altering the Makefile, which may be useful if you don't have root access and can't do "sudo make install".
+
+You can also temporarily specify the directory by passing Komi an argument at launch, like:
+
+  komi --path /home/bob/komidata/
+
+Note that the slash at the end is mandatory.
+
+
 Other Problems?
 ---------------
 
