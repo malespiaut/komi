@@ -141,6 +141,8 @@ void loadsprite (struct sprite_struct * thesprite, char * directory, char * file
    int r, g, b;
    char fullpath[1024];
    
+   assert(width % 4 == 0 && height % 4 == 0);     // See FIXME above.
+   
    if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
    {
       fprintf(stderr, "Fatal error while loading %s:\n", filename);

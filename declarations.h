@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "1.02"
+#define VERSION "1.03"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
 #define PREFSNAME ".komirc"
 
@@ -286,6 +286,7 @@ int shuffle = 0;
 int algorithmicenemies = 0;
 int fullscreen = 0;
 int fastdraw = 0;
+int gfxdetails = 0;
 
 int gotdelayarg = 0;    // Flag raised if "--delay" is used; prevents delay being read from prefs file.
 

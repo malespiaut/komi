@@ -30,3 +30,9 @@ After this, you can run the game with the command:
 The locations can be edited in the Makefile (do this before
 compilation, so the app knows where to find the resources).
 
+If you can't install the data files as above (ie you don't have
+root access) then you can locate the directory at runtime with:
+
+  komi --path /foo/bar/komidata/
+
+Note that the trailing slash is mandatory.

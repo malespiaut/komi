@@ -92,6 +92,10 @@ int main (int argc, char * argv[]) {
       {
          fullscreen = 1;
       }
+      if (strcmp(argv[n], "--gfxdetails") == 0)
+      {
+         gfxdetails = 1;
+      }
       if (strcmp(argv[n], "--nosound") == 0 || strcmp(argv[n], "--nosounds") == 0)
       {
          nosound = 1;
@@ -205,7 +209,12 @@ int main (int argc, char * argv[]) {
    }
    
    loadsprites();
-
+   
+   if (gfxdetails)
+   {
+      printgfxdetails();
+   }
+   
    menu();
 
    cleanexit(0);
@@ -370,6 +379,8 @@ int playlevel (void)
 {
    int n;
    int notedtime;
+   int levelstarttime;
+   int havepausedflag = 0;
 
    blanklevel();
    choosenumbers();
@@ -414,6 +425,8 @@ int playlevel (void)
          break;
       }
    }
+   
+   levelstarttime = SDL_GetTicks();
    
    while(1)
    {
@@ -466,6 +479,10 @@ int playlevel (void)
       {
          if (playerdeath())
          {
+            if (gfxdetails && havepausedflag == 0)    // Display FPS if requested at launch.
+            {
+               fprintf(stdout, "%d FPS (%d frames / %d ms)\n", (tick * 1000) / (SDL_GetTicks() - levelstarttime), tick, SDL_GetTicks() - levelstarttime);
+            }
             for (n = 0; n < 10; n++)     // 10 delays of 50 ms, with event checking so user can press escape.
             {
                manageevents();
@@ -490,6 +507,10 @@ int playlevel (void)
       }
       if (leveldone())
       {
+         if (gfxdetails && havepausedflag == 0)    // Display FPS if requested at launch.
+         {
+            fprintf(stdout, "%d FPS (%d frames / %d ms)\n", (tick * 1000) / (SDL_GetTicks() - levelstarttime), tick, SDL_GetTicks() - levelstarttime);
+         }
          fadeout();
          if (keymap.escape)        // See note above.
          {
@@ -502,10 +523,18 @@ int playlevel (void)
       manageevents();
       if (keymap.escape)
       {
+         if (gfxdetails && havepausedflag == 0)    // Display FPS if requested at launch.
+         {
+            fprintf(stdout, "%d FPS (%d frames / %d ms)\n", (tick * 1000) / (SDL_GetTicks() - levelstarttime), tick, SDL_GetTicks() - levelstarttime);
+         }
          return QUIT;
       }
       if (cheats && keymap.levelskip)
       {
+         if (gfxdetails && havepausedflag == 0)    // Display FPS if requested at launch.
+         {
+            fprintf(stdout, "%d FPS (%d frames / %d ms)\n", (tick * 1000) / (SDL_GetTicks() - levelstarttime), tick, SDL_GetTicks() - levelstarttime);
+         }
          havecheated = 1;
          return LEVEL_COMPLETE;
       }
@@ -517,6 +546,7 @@ int playlevel (void)
       if (keymap.pause)
       {
          playsound(pause_sound);
+         havepausedflag = 1;
          keymap.pause = 0;
          keymap.left1 = 0;
          keymap.left2 = 0;
@@ -2153,7 +2183,7 @@ void choosenumbers (void)
                diamonds = 1;
             break;
          default :
-            algorithmicenemynumbers(pretendlevel);
+            algorithmicenemynumbers(pretendlevel - DEFINEDLEVELS);   // Start at algorithmic level 1 once completed the defined levels.
             break;
       }
    } else {
@@ -2173,6 +2203,7 @@ void choosenumbers (void)
 
 void algorithmicenemynumbers (int thislevel)   // Set enemy numbers algorithmically. Only called if numbers not predefined above.
 {
+   assert(thislevel > 0);
 
    if (thislevel % 5 == 0) levelinfo.electrasflag = 1;
    if (levelinfo.electrasflag)
@@ -2208,6 +2239,14 @@ void algorithmicenemynumbers (int thislevel)   // Set enemy numbers algorithmica
    if (thislevel % 5 == 4) levelinfo.enemycount[BOUNCER] = (thislevel / 10) + 1;
    if (thislevel % 3 == 1 || thislevel % 7 == 1) levelinfo.enemycount[EYEBALL] = 1;
    if (thislevel % 8 == 3) levelinfo.enemycount[DROPPER] = 3;
+   if (thislevel % 7 == 1) levelinfo.snipersflag = 1;
+   if (thislevel % 4 == 2)
+   {
+      levelinfo.enemycount[BOMBER] = thislevel / 3;
+      if (levelinfo.enemycount[BOMBER] > 5) levelinfo.enemycount[BOMBER] = 5;
+   } else if (thislevel % 7 == 2) {
+      levelinfo.enemycount[BOMBER] = 1;
+   }
    
    if (thislevel > 10) levelinfo.topdiamonds = 0;
    
@@ -3855,17 +3894,57 @@ void setprefsdir (void)    // Try to get a sensible directory to save prefs to.
    // Unix has $HOME
    if ((dir = getenv("HOME")) != NULL)
    {
-      snprintf(prefsdir, sizeof(prefsdir) - 1, "%s/", dir);
+      if (strlen(dir) + 1 >= sizeof(prefsdir))
+      {
+         fprintf(stderr, "Could not set prefs directory - name is too long:\n%s\n", dir);
+      } else {
+         sprintf(prefsdir, "%s/", dir);
+      }
       return;
    }
 
     // Windows has APPDATA
-   if ((dir = getenv("APPDATA")) != NULL) 
+   if ((dir = getenv("APPDATA")) != NULL)
    {
-      snprintf(prefsdir, sizeof(prefsdir) - 1, "%s/", dir);
+      if (strlen(dir) + 1 >= sizeof(prefsdir))
+      {
+         fprintf(stderr, "Could not set prefs directory - name is too long:\n%s\n", dir);
+      } else {
+         sprintf(prefsdir, "%s/", dir);
+      }
       return;
    }
 
    // No variables - just return. prefsdir will be whatever it was set to in declarations.h
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void printgfxdetails (void)
+{
+   fprintf(stdout, "\n");
+   if ((virtue->flags & SDL_HWSURFACE) == SDL_HWSURFACE)
+   {
+      fprintf(stdout, "Screen is in video memory.\n");
+   } else {
+      fprintf(stdout, "Screen is in system memory.\n");
+   }
+   fprintf(stdout, "Screen is at %d bits per pixel.\n", virtue->format->BitsPerPixel);
+   if ((virtue->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF)
+   {
+      fprintf(stdout, "Screen has double-buffering enabled.\n");
+   } else {
+      fprintf(stdout, "Screen does not have double-buffering enabled.\n");
+   }
+   fprintf(stdout, "\n");
+   if ((komi_sprite.pixelmap->flags & SDL_HWSURFACE) == SDL_HWSURFACE)
+   {
+      fprintf(stdout, "Sprites are in video memory.\n");
+   } else {
+      fprintf(stdout, "Sprites are in system memory.\n");
+   }
+   fprintf(stdout, "Sprites are at %d bits per pixel.\n", komi_sprite.pixelmap->format->BitsPerPixel);
+   fprintf(stdout, "\n");
    return;
 }

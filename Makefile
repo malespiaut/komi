@@ -28,6 +28,7 @@ install:
 	cp -R komidata/* $(DATAPATH)
 	chmod -R 644 $(DATAPATH)
 	chmod 755 $(DATAPATH)
+	install -d $(BINPATH)
 	cp komi $(BINPATH)
 	chmod 755 $(BINPATH)komi
 	install -d $(MANPATH)

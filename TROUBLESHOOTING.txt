@@ -24,8 +24,6 @@ Speed Problems
 
 The game may be too fast or too slow. You can adjust the speed by clicking on the speed bar in the title screen.
 
-Unfortunately, it seems that some speeds are better than others in terms of how "jerky" the motion of objects on the screen is - I suspect this has something to do with the refresh rate of the monitor. Some experimentation with the speed setting may be necessary.
-
 If things are too slow even on the fastest setting, as a last resort, try doing:
 
   komi --fastdraw
@@ -33,6 +31,18 @@ If things are too slow even on the fastest setting, as a last resort, try doing:
 The "fastdraw" option is experimental but should update only those parts of the screen that need updating. It forces stars to be off.
 
 The game runs fine on my computer, yet runs really slowly on a supposedly faster machine that I also have access to. The speed difference is about 400 percent. After investigation, this seems to have something to do with the second machine having hyperthreading and runnning in SMP mode. If you're running Komi on a hyperthreaded machine, I want to hear about your results.
+
+
+Jerkiness
+---------
+
+Unfortunately, it seems that some speeds are better than others in terms of how "jerky" the motion of objects on the screen is - I suspect this has something to do with the refresh rate of the monitor. Some experimentation with the speed setting may be necessary.
+
+To assist you in this, as of version 1.03, you can get a rough idea of what framerate Komi is running at by running it like so:
+
+  komi --gfxdetails
+
+This will print (to stdout) the framerate that the last level ran at upon its completion. Ideally, you probably want to set the speed of the game so that the framerate is close to (or possibly just below) your monitor's refresh rate. For example, my monitor runs at 85 Hz (refreshes 85 times per second) and, happily, I can get the speed of Komi to be about 83 frames per second.
 
 
 Keys
@@ -45,7 +55,8 @@ Difficulty
 ----------
 
 Komi is a hard game. :-)
-Certainly when played at a proper speed...
+
+Certainly when played at a proper speed... still, there's no shame in reducing the speed a bit, or even all the way down to its lowest setting. This is probably more fun when the shuffle option is used, otherwise you'll get all the easier levels first, which may be quite boring at low speeds.
 
 
 Installation and data files

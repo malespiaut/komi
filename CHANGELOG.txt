@@ -1,3 +1,13 @@
+From 1.02 to 1.03
+-----------------
+
+* For compatibility, remove use of snprintf() which seems to be a C99 specific function.
+* --gfxdetails argument will print some details about the SDL surfaces.
+* It will also print FPS information when possible.
+* Makefile does install -d for the BINPATH
+* All enemies now can be in algorithmically generated (non-predefined) levels.
+* If reached via normal game, algorithmic generation of levels starts with easier levels.
+
 From 1.01 to 1.02
 -----------------
 
