@@ -21,8 +21,6 @@ void loadsprites (void)
    spritemap[SCROLLERRIGHT] = &scrollerright_sprite;
    loadsprite(&electra_sprite, filepath, "sprites_electra.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    spritemap[ELECTRA] = &electra_sprite;
-   loadsprite(&follower_sprite, filepath, "sprites_follower.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
-   spritemap[FOLLOWER] = &follower_sprite;
    loadsprite(&roamer_sprite, filepath, "sprites_roamer.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    spritemap[ROAMER] = &roamer_sprite;
    loadsprite(&brownian_sprite, filepath, "sprites_brownian.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
@@ -43,13 +41,20 @@ void loadsprites (void)
    spritemap[DROPPER] = &dropper_sprite;
 
    loadsprite(&powerup_sprite, filepath, "sprites_powerup.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   powerupspritemap[RANDOM] = &powerup_sprite;
+   
    loadsprite(&destructor_sprite, filepath, "sprites_destructor.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   powerupspritemap[DESTRUCTOR] = &destructor_sprite;
+   
    loadsprite(&shootpower_sprite, filepath, "sprites_shootpower.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   powerupspritemap[SHOOTPOWER] = &shootpower_sprite;
+   
    loadsprite(&life_sprite, filepath, "sprites_life.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   powerupspritemap[EXTRALIFE] = &life_sprite;
 
    loadsprite(&skullpull_sprite, filepath, "sprites_skullpull.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
 
-   loadsprite(&shot_sprite, filepath, "sprites_shot.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   loadsprite(&friendlyshot_sprite, filepath, "sprites_friendlyshot.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    loadsprite(&enemyshot_sprite, filepath, "sprites_enemyshot.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    
    loadsprite(&shooterkomi_sprite, filepath, "sprites_shooterkomi.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
@@ -69,8 +74,8 @@ void loadsprites (void)
 
 void loadsounds (void)
 {
+
    loadsound(&oneup_sound, filepath, "sounds_oneup.wav");
-   loadsound(&bounce_sound, filepath, "sounds_bounce.wav");
    loadsound(&contactdeath_sound, filepath, "sounds_contactdeath.wav");
    loadsound(&destructorkill_sound, filepath, "sounds_destructorkill.wav");
    loadsound(&eat_sound, filepath, "sounds_eat.wav");
@@ -86,5 +91,6 @@ void loadsounds (void)
    loadsound(&shoot_sound, filepath, "sounds_shoot.wav");
    loadsound(&stick_sound, filepath, "sounds_stick.wav");
    loadsound(&unfreezewarning_sound, filepath, "sounds_unfreezewarning.wav");
+
    return;
 }

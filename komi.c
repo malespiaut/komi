@@ -1,21 +1,30 @@
-// Komi...
-// Copyright Allan Crossman, 2004.
+/*
+    Komi...
+    Copyright Allan Crossman, 2004.
 
-/* 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to:
+    
+       The Free Software Foundation, Inc.
+       59 Temple Place - Suite 330
+       Boston, MA  02111-1307
+       USA
+*/
+
+
+// Hmm, so you're reading the code?
+// This will only show you how terrible a programmer I am. :-/
 
 #include <assert.h>
 #include <stdio.h>
@@ -28,18 +37,18 @@
 // SDL...
 
 #include <SDL.h>
-#include <SDL_image.h>
 #include <SDL_mixer.h>
 
-// Non Komi-specific files...
+// Bitmask...
 
 #include "bitmask.h"
-#include "gfx_sdl.h"
 
 // Komi-specific files...
 
 #include "declarations.h"    // Definitions, globals, etc...
 #include "prototypes.h"
+
+#include "gfx.h"
 
 #include "sprites.h"
 #include "loaders.h"
@@ -57,22 +66,23 @@ int main (int argc, char * argv[]) {
       if (strcmp(argv[n], "--fullspeed") == 0)
       {
          fullspeedflag = 1;
+         delay = 1;            // But this will not be used in the main loop.
       }
       if (strcmp(argv[n], "--superfast") == 0)
       {
-         delay = 1;
+         delay = 4;
       }
       if (strcmp(argv[n], "--fast") == 0)
       {
-         delay = 5;
+         delay = 8;
       }
       if (strcmp(argv[n], "--medium") == 0)
       {
-         delay = 10;
+         delay = 12;
       }
       if (strcmp(argv[n], "--slow") == 0)
       {
-         delay = 15;
+         delay = 16;
       }
       if (strcmp(argv[n], "--glacial") == 0)
       {
@@ -90,6 +100,15 @@ int main (int argc, char * argv[]) {
       {
          nosound = 1;
       }
+      if (strcmp(argv[n], "--fastdraw") == 0)
+      {
+         fastdraw = 1;
+         nostarsflag = 1;
+      }
+      if (strcmp(argv[n], "--hog") == 0)
+      {
+         hog = 1;
+      }
       if (strcmp(argv[n], "--algorithmic") == 0)
       {
          algorithmicenemies = 1;
@@ -97,6 +116,10 @@ int main (int argc, char * argv[]) {
       if (strcmp(argv[n], "--cheats") == 0 || strcmp(argv[n], "--cheat") == 0)
       {
          cheats = 1;
+      }
+      if (strcmp(argv[n], "--invincible") == 0)
+      {
+         invincible = 1;
       }
       if (strcmp(argv[n], "--help") == 0 || strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--usage") == 0)
       {
@@ -122,7 +145,6 @@ int main (int argc, char * argv[]) {
             fprintf(stderr, "Are you sure you've passed the full pathname?\n");
          }
       }
-         
    }
    
    if (nosound == 0)
@@ -153,8 +175,8 @@ int main (int argc, char * argv[]) {
    
    if (fullscreen == 0)
    {
-      virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT);
-      SDL_WM_SetCaption("Komi", NULL);
+      virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT | SDL_SWSURFACE);
+      SDL_WM_SetCaption("Komi " VERSION, NULL);
    } else {
       virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT | SDL_FULLSCREEN);
    }
@@ -194,10 +216,10 @@ void menu (void)
       {
          if (abs(mousemap.clickx - STARTBUTTON_X) < start_title.width / 2 && abs(mousemap.clicky - STARTBUTTON_Y) < start_title.height / 2)
          {
-            if (cheats == 0) SDL_ShowCursor(SDL_DISABLE);
+            SDL_ShowCursor(SDL_DISABLE);
             game();
             SDL_ShowCursor(SDL_ENABLE);
-            SDL_WM_SetCaption("Komi", NULL);
+            SDL_WM_SetCaption("Komi " VERSION, NULL);
             drawmenu();
          } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.width / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.height / 2) {
             cleanexit(0);
@@ -211,6 +233,7 @@ void menu (void)
 
 void game (void)
 {
+   int gameoverflag;
    
    level = 1;
    lives = START_LIVES;
@@ -258,6 +281,7 @@ void game (void)
 int playlevel (void)
 {
    int n;
+   int notedtime;
 
    blanklevel();
    choosenumbers();
@@ -268,11 +292,15 @@ int playlevel (void)
    
    tonguelength = 0;
    tonguespeed = 0;
-   
+
+   shotsavailable = 0;
+
    caughttype = 0;
    caughtnumber = -1;
    
    tick = 0;
+   
+   rects = 0;
    
    keymap.levelskip = 0;
    keymap.pause = 0;
@@ -280,6 +308,7 @@ int playlevel (void)
    mousemap.button = 0;
 
    cls(virtue, 0, 0, 0);
+   SDL_Flip(virtue);
    updatetitlebar();
    
    for (n = 0; n < MAX_ENEMIES; n++)
@@ -313,30 +342,48 @@ int playlevel (void)
       {
          dostars();
       }
+         
+      if (fullspeedflag == 0)
+      {
+         if (hog)
+         {
+            notedtime = SDL_GetTicks();
+            while (SDL_GetTicks() - notedtime < delay)
+            {
+               ;
+            }
+         } else {
+            SDL_Delay(delay);
+         }
+      }
       
       movesprites();
       drawsprites();
-      SDL_Flip(virtue);
-      
-      if (playerdeath())
+      if (fastdraw)
       {
-         SDL_Delay(500);
-         if (lives == 1)
+         SDL_UpdateRects(virtue, rects, updaterect);
+      } else {
+         SDL_Flip(virtue);
+      }
+      rects = 0;
+      
+      if (invincible == 0)
+      {
+         if (playerdeath())
          {
-            playsound(-1, gameover_sound, 0);
+            SDL_Delay(500);
+            if (lives == 1)
+            {
+               playsound(-1, gameover_sound, 0);
+            }
+            fadeout();
+            return DEATH;
          }
-         fadeout();
-         return DEATH;
       }
       if (leveldone())
       {
          fadeout();
          return LEVEL_COMPLETE;
-      }
-      
-      if (fullspeedflag == 0)
-      {
-         SDL_Delay(delay);
       }
       
       manageevents();
@@ -395,6 +442,7 @@ int playlevel (void)
 void movesprites (void)
 {
    int n;
+   int i;
 
    for (n = 0; n < MAX_ENEMIES; n++)
    {
@@ -405,18 +453,6 @@ void movesprites (void)
             komix -= 1;
          } else if (enemy[n].x > komix) {
             komix += 1;
-         }
-      }
-   }
-   
-   if (cheats && mousemap.button)
-   {
-      mousemap.button = 0;
-      for (n = 0; n < MAX_ENEMIES; n++)
-      {
-         if (enemy[n].exists && sprite_collision(&electra_sprite, mousemap.clickx, mousemap.clicky, spritemap[enemy[n].type], enemy[n].x, enemy[n].y))
-         {                                      // use electra_sprite cos it's round and nice.
-            enemy[n].exists = 0;
          }
       }
    }
@@ -432,7 +468,14 @@ void movesprites (void)
    
    if (keymap.fire && tonguelength == 0)
    {
-      tonguespeed = TONGUE_SPEED;
+      if (shotsavailable > 0)
+      {
+         addkomishot();
+         shotsavailable--;
+         keymap.fire = 0;
+      } else {
+         tonguespeed = TONGUE_SPEED;
+      }
    }
    if (tonguespeed > 0 && keymap.fire == 0)
    {
@@ -515,7 +558,7 @@ void movesprites (void)
    {
       if (caughttype == DIAMOND && caughtnumber == n)
       {
-               diamond[n].x = caughtoffsetx + komix;
+         diamond[n].x = caughtoffsetx + komix;
          diamond[n].y = caughtoffsety + komiy - tonguelength;
          if (diamond[n].y > komiy - 10 || tonguelength == 0)
          {
@@ -564,6 +607,90 @@ void movesprites (void)
          {
             enemyshot[n].exists = 0;
          }
+      }
+   }
+
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists)
+      {
+         friendlyshot[n].x += friendlyshot[n].speedx;
+         friendlyshot[n].y += friendlyshot[n].speedy;
+         if (friendlyshot[n].x < (SPRITE_SIZE / 2) * -1 || friendlyshot[n].x > WIDTH + (SPRITE_SIZE / 2) || friendlyshot[n].y < (SPRITE_SIZE / 2) * -1 || friendlyshot[n].y > HEIGHT + (SPRITE_SIZE / 2))
+         {
+            friendlyshot[n].exists = 0;
+         }
+         
+         for (i = 0; i < MAX_ENEMIES; i++)
+         {
+            if (enemy[i].exists && sprite_collision(spritemap[enemy[i].type], enemy[i].x, enemy[i].y, &friendlyshot_sprite, friendlyshot[n].x, friendlyshot[n].y))
+            {
+               enemy[i].exists = 0;
+               friendlyshot[n].exists = 0;
+               playsound(-1, destructorkill_sound, 0);
+               break;                             // Don't kill multiple enemies with one shot.
+            }
+         }
+      }
+   }
+   
+   if (goodie.exists)
+   {
+      if (caughttype == POWERUP)
+      {
+         goodie.x = caughtoffsetx + komix;
+         goodie.y = caughtoffsety + komiy - tonguelength;
+         if (goodie.y > komiy - 10 || tonguelength == 0)
+         {
+            goodie.exists = 0;
+            caughttype = 0;
+            caughtnumber = -1;
+            tonguelength = 0;
+            tonguespeed = 0;
+            goodieaction(goodie.type);
+         }
+      } else {
+         goodie.x += goodie.speedx;
+         goodie.y += goodie.speedy;
+         if (goodie.x < SPRITE_SIZE / 2)
+         {
+            goodie.x = SPRITE_SIZE / 2;
+            goodie.speedx = fabs(goodie.speedx);
+         }
+         if (goodie.x > WIDTH - (SPRITE_SIZE / 2))
+         {
+            goodie.x = WIDTH - (SPRITE_SIZE / 2);
+            goodie.speedx = fabs(goodie.speedx) * -1;
+         }
+         if (goodie.y < SPRITE_SIZE / 2)     // Don't change speedy in this case, to allow gradual entry into the screen.
+         {
+            goodie.speedy = fabs(goodie.speedy);
+         }
+         if (goodie.y > lightningy - (SPRITE_SIZE / 2))
+         {
+            goodie.y = lightningy - (SPRITE_SIZE / 2);
+            goodie.speedy = fabs(goodie.speedy) * -1;
+         }
+      }
+   }
+   
+   for (n = 0; n < POWERUPTYPES; n++)
+   {
+      if (goodie.exists == 0 && rnd() < levelinfo.powerup_prob[n] && tick < POWERUPCUTOFFTIME)
+      {
+         goodie.exists = 1;
+         goodie.type = n;
+         goodie.x = rnd() * WIDTH;
+         goodie.y = 0;
+         if (goodie.x > WIDTH / 2)
+         {
+            goodie.speedx = -2;
+         } else {
+            goodie.speedx = 2;
+         }
+         goodie.speedy = 1;
+         playsound(-1, powerup_sound, 0);
+         break;
       }
    }
    
@@ -852,7 +979,7 @@ void movegunner (int n)
       enemy[n].y = lightningy - (SPRITE_SIZE / 2);
       enemy[n].speedy = fabs(enemy[n].speedy) * -1;
    }
-   if (rnd() < levelinfo.gunnershootprob)
+   if (rnd() < levelinfo.gunnershootprob && tick - enemy[n].intvar > GUNNERRELOADTIME)
    {
       for (i = 0; i < MAX_ENEMYSHOTS; i++)
       {
@@ -874,6 +1001,7 @@ void movegunner (int n)
                enemyshot[i].speedy = enemyshot[i].speedy / (fabs(enemyshot[i].speedy) / levelinfo.enemyshotbasespeed);
             }
             playsound(-1, shoot_sound, 0);
+            enemy[n].intvar = tick;
             break;
          }
       }
@@ -980,7 +1108,7 @@ void movedropper (int n)
       }
    } else {
       enemy[n].y = lightningy + levelinfo.dropperhoveroffset;
-      if (fabs(komix - enemy[n].x) < 10)
+      if (fabs(komix - enemy[n].x) < 10 && enemy[n].y < komiy)
       {
          if (enemy[n].intvar)       // So he can't dive if he started the level above Komi (intvar initialised as 0).
          {
@@ -992,8 +1120,8 @@ void movedropper (int n)
    }
    
    return;
-}     
-      
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
    
 void drawsprites (void)   /*  everything drawn here needs to be cleared at clearsprites()  */
@@ -1041,8 +1169,9 @@ void drawsprites (void)   /*  everything drawn here needs to be cleared at clear
    // Draw tongue...
    if (tonguelength)
    {
-      rect(virtue, komix - TONGUE_WIDTH / 2, komiy - tonguelength, komix + TONGUE_WIDTH / 2, komiy, 0, 0, 0);
-      frect(virtue, (komix - TONGUE_WIDTH / 2) + 1, komiy - tonguelength, (komix + TONGUE_WIDTH / 2) - 1, komiy, TONGUE_R, TONGUE_G, TONGUE_B);
+      frect(virtue, (komix - TONGUE_WIDTH / 2), komiy - tonguelength, (komix + TONGUE_WIDTH / 2), komiy, TONGUE_R, TONGUE_G, TONGUE_B);
+      line(virtue, komix - TONGUE_WIDTH / 2, komiy - tonguelength, komix - TONGUE_WIDTH / 2, komiy, 0, 0, 0);
+      line(virtue, komix + (TONGUE_WIDTH / 2) - 1, komiy - tonguelength, komix + (TONGUE_WIDTH / 2) - 1, komiy, 0, 0, 0);
       drawsprite(&tip_sprite, virtue, komix, komiy - tonguelength);
    }
 
@@ -1063,11 +1192,31 @@ void drawsprites (void)   /*  everything drawn here needs to be cleared at clear
          drawsprite(&diamond_sprite, virtue, diamond[n].x, diamond[n].y);
       }
    }
+   
+   // Draw Powerup...
+   if (goodie.exists)
+   {
+      drawsprite(powerupspritemap[goodie.type], virtue, goodie.x, goodie.y);
+   }
 
+   // Draw Friendly Shots...
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists)
+      {
+         drawsprite(&friendlyshot_sprite, virtue, friendlyshot[n].x, friendlyshot[n].y);
+      }
+   }
+   
    // Draw Komi...
    if (lightningdeath() == 0)
    {
-      drawsprite(&komi_sprite, virtue, komix, komiy);
+      if (shotsavailable > 0)
+      {
+         drawsprite(&shooterkomi_sprite, virtue, komix, komiy);
+      } else {
+         drawsprite(&komi_sprite, virtue, komix, komiy);
+      }
    } else {
       drawsprite(&electrickomi_sprite, virtue, komix, komiy);
    }
@@ -1146,12 +1295,22 @@ void clearsprites (void)
    {
       if (enemy[n].exists && enemy[n].type == ELECTRA && enemy[enemy[n].intvar].exists && enemy[n].x < enemy[enemy[n].intvar].x)
       {
-         frect(virtue, enemy[n].x - (SPRITE_SIZE / 2), enemy[n].y - (SPRITE_SIZE / 2), enemy[enemy[n].intvar].x + (SPRITE_SIZE / 2), enemy[enemy[n].intvar].y + (SPRITE_SIZE / 2), 0, 0, 0);
+         frect(virtue, enemy[n].x - (SPRITE_SIZE / 2), (enemy[n].y - LIGHTNINGVARIANCE) - 1, enemy[enemy[n].intvar].x + (SPRITE_SIZE / 2), enemy[enemy[n].intvar].y + LIGHTNINGVARIANCE + 1, 0, 0, 0);
       }
    }
 
    // Clear Komi...
-   clearsprite(&komi_sprite, virtue, komix, komiy);
+   if (lightningdeath() == 0)
+   {
+      if (shotsavailable > 0)
+      {
+         clearsprite(&shooterkomi_sprite, virtue, komix, komiy);
+      } else {
+         clearsprite(&komi_sprite, virtue, komix, komiy);
+      }
+   } else {
+      clearsprite(&electrickomi_sprite, virtue, komix, komiy);
+   }
    
    // Clear Coins...
    for (n = 0; n < MAX_COINS; n++)
@@ -1171,12 +1330,27 @@ void clearsprites (void)
       }
    }
 
-   // Draw Enemy Shots...
+   // Clear Powerup...
+   if (goodie.exists)
+   {
+      clearsprite(powerupspritemap[goodie.type], virtue, goodie.x, goodie.y);
+   }
+
+   // Clear Enemy Shots...
    for (n = 0; n < MAX_ENEMYSHOTS; n++)
    {
       if (enemyshot[n].exists)
       {
          clearsprite(&enemyshot_sprite, virtue, enemyshot[n].x, enemyshot[n].y);
+      }
+   }
+
+   // Clear Friendly Shots...
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists)
+      {
+         clearsprite(&friendlyshot_sprite, virtue, friendlyshot[n].x, friendlyshot[n].y);
       }
    }
 
@@ -1215,7 +1389,7 @@ void checktonguepickup (void)
             } else {
                tonguespeed = TONGUE_SPEED * -2;
             }
-            break;
+            return;
          }
       }
    }
@@ -1237,8 +1411,27 @@ void checktonguepickup (void)
             } else {
                tonguespeed = TONGUE_SPEED * -2;
             }
-            break;
+            return;
          }
+      }
+   }
+   
+   if (goodie.exists)
+   {
+      if (sprite_collision(powerupspritemap[goodie.type], goodie.x, goodie.y, &pickupmask_sprite, komix, komiy - tonguelength))
+      {
+         caughttype = POWERUP;
+         caughtnumber = 0;
+         caughtoffsetx = goodie.x - komix;
+         caughtoffsety = goodie.y - (komiy - tonguelength);
+         playsound(-1, stick_sound, 0);
+         if (fastretract == 0)
+         {
+            tonguespeed = TONGUE_SPEED * -1;
+         } else {
+            tonguespeed = TONGUE_SPEED * -2;
+         }
+         return;
       }
    }
    
@@ -1251,7 +1444,8 @@ void blanklevel (void)
 {
    int n;
    
-   /* Anything that can be set by choosenumbers() needs to be set to a default value here.  */
+   /* Anything that can be set by choosenumbers() needs to be set to a default value here.      */
+   /* Also clear all objects (with the exception of coins + diamonds if this isn't a new level. */
 
    lightningcheck = LIGHTNINGCHECK_DEFAULT;
    lightningy = START_LIGHTNING_Y;
@@ -1275,9 +1469,16 @@ void blanklevel (void)
       }
    }
    
+   goodie.exists = 0;
+   
    for (n = 0; n < MAX_ENEMYSHOTS; n++)
    {
       enemyshot[n].exists = 0;
+   }
+   
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      friendlyshot[n].exists = 0;
    }
    
    for (n = 0; n < ENEMYTYPES; n++)
@@ -1304,7 +1505,6 @@ void blanklevel (void)
    levelinfo.guardianaccels = 0;
    
    levelinfo.gunnershootprob = 0.01;
-   
    levelinfo.enemyshotbasespeed = 3;
    
    levelinfo.electrasflag = 0;
@@ -1312,6 +1512,11 @@ void blanklevel (void)
    
    levelinfo.dropperhoveroffset = SPRITE_SIZE;
    levelinfo.dropperspeedy = 5;
+   
+   for (n = 0; n < POWERUPTYPES; n++)
+   {
+      levelinfo.powerup_prob[n] = BASEPOWERUPPROB;
+   }
    
    return;
 }
@@ -1464,6 +1669,7 @@ void choosenumbers (void)
             levelinfo.enemycount[BROWNIAN] = 6;
             levelinfo.enemycount[DIVER] = 1;
             levelinfo.enemycount[SCROLLERLEFT] = 1;
+            levelinfo.powerup_prob[SHOOTPOWER] = 1;
             lightningcheck = 100000000;
             break;
          case 22 :
@@ -1755,6 +1961,7 @@ void makelevel (void)
             if (rnd() < 0.5) enemy[t].speedx *= -1;
             enemy[t].speedy = (rnd() * (levelinfo.roamermaxspeed - levelinfo.roamerminspeed)) + levelinfo.roamerminspeed;
             if (rnd() < 0.5) enemy[t].speedy *= -1;
+            enemy[t].intvar = 0;
             break;
          }
       }
@@ -2019,6 +2226,7 @@ void playsound (int channel, Mix_Chunk * thesound, int loops)
 
 void drawmenu (void)
 {
+   rects = 0;
    cls(virtue, 0, 0, 0);
    drawsprite(&maintitle_title, virtue, MAINTITLE_X, MAINTITLE_Y);
    drawsprite(&gpl_title, virtue, GPL_X, GPL_Y);
@@ -2243,10 +2451,10 @@ void doelectricity (void)
             nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
             nexty = lightningy + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
          
-            if (de_lightningdeath_flag && nextx >= komix && currentx < komix)
+            if (de_lightningdeath_flag && nextx >= komix && currentx < komix && lightningy <= komiy)
             {
                nextx = komix;
-               nexty = komiy;
+               nexty = lightningy + LIGHTNINGVARIANCE;
             }
         
             if (nextx >= WIDTH - LIGHTNINGADJUST)
@@ -2376,7 +2584,7 @@ void doelectrabolts (int x1, int y, int x2)
          nextx = currentx + (rnd() * BOLTMAXLENGTH) + 1;
          nexty = y + (rnd() * LIGHTNINGVARIANCE * 2) - LIGHTNINGVARIANCE;
          
-         if (nextx >= komix && currentx < komix && y >= komiy - tonguelength)
+         if (nextx >= komix && currentx < komix && y >= komiy - tonguelength && y <= komiy)
          {
             nextx = komix;
             nexty = y + LIGHTNINGVARIANCE;
@@ -2528,3 +2736,140 @@ void drawskullpull (int clearflag, int n)
    
    return;
 }
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void goodieaction (int type)   // This function should play some sound, be it the standard eat sound or something else.
+{
+   switch (type)
+   {
+      case EXTRALIFE :
+         lives++;
+         updatetitlebar();
+         playsound(-1, oneup_sound, 0);
+         break;
+      case SHOOTPOWER :
+         shotsavailable += 3;
+         playsound(-1, eat_sound, 0);
+         break;
+      case DESTRUCTOR :
+         addcornershots();
+         playsound(-1, shoot_sound, 0);
+         break;
+      case RANDOM :
+         switch (intrnd(2))
+         {
+            case 0 :
+               goodieaction(EXTRALIFE);
+               break;
+            case 1 :
+               goodieaction(SHOOTPOWER);
+               break;
+            case 2 :
+               goodieaction(DESTRUCTOR);
+               break;
+            default :
+               fprintf(stderr, "Warning: Random goodie-type got bad number from intrnd()\n");
+               break;
+         }
+         break;
+      default :
+         fprintf(stderr, "Warning: unrecognised powerup type.\n");
+         break;
+   }
+
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void addcornershots (void)
+{
+   int n;
+
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists == 0)
+      {
+         friendlyshot[n].exists = 1;
+         friendlyshot[n].x = 0;
+         friendlyshot[n].y = 0;
+         friendlyshot[n].speedx = 2;
+         friendlyshot[n].speedy = 2;
+         break;
+      }
+   }
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists == 0)
+      {
+         friendlyshot[n].exists = 1;
+         friendlyshot[n].x = WIDTH;
+         friendlyshot[n].y = 0;
+         friendlyshot[n].speedx = -2;
+         friendlyshot[n].speedy = 2;
+         break;
+      }
+   }
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists == 0)
+      {
+         friendlyshot[n].exists = 1;
+         friendlyshot[n].x = 0;
+         friendlyshot[n].y = HEIGHT;
+         friendlyshot[n].speedx = 2;
+         friendlyshot[n].speedy = -2;
+         break;
+      }
+   }
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists == 0)
+      {
+         friendlyshot[n].exists = 1;
+         friendlyshot[n].x = WIDTH;
+         friendlyshot[n].y = HEIGHT;
+         friendlyshot[n].speedx = -2;
+         friendlyshot[n].speedy = -2;
+         break;
+      }
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void addkomishot (void)
+{
+   int n;
+
+   for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
+   {
+      if (friendlyshot[n].exists == 0)
+      {
+         friendlyshot[n].exists = 1;
+         friendlyshot[n].x = komix;
+         friendlyshot[n].y = komiy;
+         friendlyshot[n].speedx = 0;
+         friendlyshot[n].speedy = -3;
+         playsound(-1, shoot_sound, 0);
+         break;
+      }
+   }
+   
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+int intrnd (int max)    // Return integer between 0 and max inclusive.
+{
+   int result;
+   
+   result = rnd() * (max + 1);
+   result %= max + 1;
+   return result;
+}
+

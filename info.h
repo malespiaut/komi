@@ -32,13 +32,15 @@ Komi options:\n\
      --superfast  ||  --medium  ||  --glacial\n\
 \n\
   Technical options:\n\
+     --fastdraw         (experimental)\n\
      --fullscreen\n\
+     --hog              (hog CPU, may reduce jerkiness)\n\
      --nosound\n\
-     --nostars             (turn the starfield off)\n\
-     --path directory/     (directory of data files)\n\
+     --nostars          (turn the starfield off)\n\
+     --path directory/  (directory of data files)\n\
 \n\
   Information:\n\
-     --copying             (Komi is under the GNU GPL)\n\
+     --copying          (Komi is under the GNU GPL)\n\
      --help\n\
      --version\n\
 \n\

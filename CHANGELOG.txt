@@ -1,0 +1,17 @@
+From 0.5a to 0.6a
+------------------
+
+Implemented "--fastdraw" option, which means only altered parts of the screen should get redrawn every frame.
+
+Implemented "--hog" option which refuses to give up the CPU mid-level.
+
+Changed shape of Komi's tongue so it looks a bit less phallic. :-/
+Now looks oddly snake-like, but never mind.
+
+Sprite collision optimised a bit - no checking bitmasks if sprites are obviously not touching due to their locations.
+
+Using Ulf Ekstrom's Bitmask 1.3 functions instead of 1.0.
+
+Removed #include for SDL-image since it wasn't being used.
+
+Added powerups.

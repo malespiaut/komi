@@ -1,21 +1,25 @@
-/* sprites.h -- sprite functions */
-/* Copyright Allan Crossman, 2004 */
+// sprites.h -- sprite functions
+// Copyright Allan Crossman, 2004
 
 /* 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to:
+    
+       The Free Software Foundation, Inc.
+       59 Temple Place - Suite 330
+       Boston, MA  02111-1307
+       USA
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
@@ -31,6 +35,11 @@ int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct spr
    
    leftx2 = x2 - sprite2->width / 2;
    topy2 = y2 - sprite2->height / 2;
+   
+   if (leftx1 > leftx2 + sprite2->width) return 0;
+   if (leftx1 + sprite1->width < leftx2) return 0;
+   if (topy1 > topy2 + sprite2->height) return 0;
+   if (topy1 + sprite1->height < topy2) return 0;
    
    return bitmask_overlap(sprite1->collisionmask, sprite2->collisionmask, leftx2 - leftx1, topy2 - topy1);
 }
@@ -65,6 +74,11 @@ void drawsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int cen
    leftx = centrex - thesprite->width / 2;
    topy = centrey - thesprite->height / 2;
    
+   if (fastdraw)
+   {
+      updaterectsarray(leftx, topy, thesprite->width, thesprite->height);
+   }
+   
    for (x = 0; x < thesprite->width; x++)
    {
       for (y = 0; y < thesprite->height; y++)
@@ -90,6 +104,11 @@ void clearsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int ce
    
    leftx = centrex - thesprite->width / 2;
    topy = centrey - thesprite->height / 2;
+   
+   if (fastdraw)
+   {
+      updaterectsarray(leftx, topy, thesprite->width, thesprite->height);
+   }
    
    for (x = 0; x < thesprite->width; x++)
    {

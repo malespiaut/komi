@@ -32,6 +32,10 @@ void doelectrabolts (int x1, int y, int x2);
 void dobrokenlightning (int leftelectrax, int rightelectrax);
 void drawskullpull (int clearflag, int n);
 void algorithmicenemynumbers (int thislevel);
+void goodieaction (int type);
+void addcornershots (void);
+void addkomishot (void);
+int intrnd (int max);
 
 void movescroller (int n);
 void movediver (int n);
@@ -63,3 +67,12 @@ void loadsounds (void);
 void printcopyinfo (void);
 void printhelp (void);
 void printversion (void);
+
+// From gfx.h
+
+void putpixel(SDL_Surface * surface, int x, int y, Uint32 pixel);
+void line (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
+void rect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
+void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
+void cls (SDL_Surface * bitmapstruct, int red, int green, int blue);
+void updaterectsarray (int leftx, int topy, int width, int height);

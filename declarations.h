@@ -3,17 +3,15 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "0.5a"
+#define VERSION "0.6a"
 
 #define WIDTH 640
 #define HEIGHT 480
 
-#define ENEMYTYPES 13
-
 #define SCROLLERLEFT 0
 #define SCROLLERRIGHT 1
 #define ELECTRA 2
-#define FOLLOWER 3
+#define ACCELERATOR 3
 #define ROAMER 4
 #define BROWNIAN 5
 #define LASERGUN 6
@@ -21,8 +19,8 @@
 #define SKULL 8
 #define BOUNCER 9
 #define GUNNER 10
-#define ACCELERATOR 11
-#define DROPPER 12
+#define DROPPER 11
+#define ENEMYTYPES 12
 
 #define MAXSTARS 350
 #define MAX_STARSPEED 10
@@ -56,7 +54,13 @@
 #define MAX_ENEMIES 30
 #define MAX_COINS 10
 #define MAX_DIAMONDS 4
+
+#define GUNNERRELOADTIME 5
 #define MAX_ENEMYSHOTS 5
+#define MAX_FRIENDLYSHOTS 10
+
+#define BASEPOWERUPPROB 0.00005
+#define POWERUPCUTOFFTIME 10000    // No powerups after this many ticks.
 
 #define LASERDURATION 20
 #define LASERWARNTIME 60
@@ -107,6 +111,14 @@
 #define DIAMOND 2
 #define POWERUP 3
 
+#define EXTRALIFE 0
+#define SHOOTPOWER 1
+#define RANDOM 2
+#define DESTRUCTOR 3
+#define POWERUPTYPES 4
+
+#define MAXRECTS 100
+
 /* -------------------------------------------------------------------------- */
 // Structure definitions...
 
@@ -114,7 +126,7 @@ struct star_struct {
    float x; float y; int brightness; int age; float speed;};
 
 struct sprite_struct {
-   int width; int height; Uint8 * pixels; Uint8 * visible; bitmask * collisionmask;};
+   int width; int height; Uint8 * pixels; Uint8 * visible; bitmask_t * collisionmask;};
 
 struct baddie_struct {
    int exists; int type; float x; float y; float speedx; float speedy; float floatvar; float floatvar2; int intvar; int intvar2;};
@@ -129,6 +141,9 @@ struct goodie_struct {
    int exists; int type; float x; float y; float speedx; float speedy;};
    
 struct enemyshot_struct {
+   int exists; float x; float y; float speedx; float speedy;};
+
+struct friendlyshot_struct {
    int exists; float x; float y; float speedx; float speedy;};
 
 struct keymap_struct {
@@ -169,6 +184,8 @@ struct level_struct {
    
    int dropperhoveroffset;
    int dropperspeedy;
+   
+   float powerup_prob[POWERUPTYPES];
    };
 
 /* -------------------------------------------------------------------------- */
@@ -177,17 +194,24 @@ struct level_struct {
 SDL_Surface * virtue;
 SDL_Event event;
 
+SDL_Rect updaterect[MAXRECTS];
+int rects;
+
 int level;
 int lives;
 
 int fullspeedflag = 0;
 int delay = 10;
+int hog = 0;
 
 int nostarsflag = 0;
 int nosound = 0;
 int cheats = 0;
+int invincible = 0;
 int algorithmicenemies = 0;
 int fullscreen = 0;
+int fastdraw = 0;
+int framerateflag = 0;
 
 int komix;
 int komiy;
@@ -202,13 +226,14 @@ int caughtnumber;
 int caughtoffsetx;
 int caughtoffsety;
 
+int shotsavailable;
+
 int lightningy;
 int lightningcheck;     // Should merge this into levelinfo structure.
 
 int tick;
 int score;
 
-int gameoverflag;
 int resetmoney;
 
 struct star_struct star[MAXSTARS];
@@ -219,6 +244,9 @@ struct baddie_struct enemy[MAX_ENEMIES];
 struct coin_struct coin[MAX_COINS];
 struct diamond_struct diamond[MAX_DIAMONDS];
 struct enemyshot_struct enemyshot[MAX_ENEMYSHOTS];
+struct friendlyshot_struct friendlyshot[MAX_FRIENDLYSHOTS];
+
+struct goodie_struct goodie;
 
 struct keymap_struct keymap = {0,0,0,0,0,0,0};
 struct mousemap_struct mousemap = {0,0,0};
@@ -231,7 +259,6 @@ struct sprite_struct generator_sprite;
 struct sprite_struct scrollerleft_sprite;
 struct sprite_struct scrollerright_sprite;
 struct sprite_struct electra_sprite;
-struct sprite_struct follower_sprite;
 struct sprite_struct roamer_sprite;
 struct sprite_struct brownian_sprite;
 struct sprite_struct lasergun_sprite;
@@ -246,7 +273,7 @@ struct sprite_struct destructor_sprite;
 struct sprite_struct shootpower_sprite;
 struct sprite_struct life_sprite;
 struct sprite_struct shooterkomi_sprite;
-struct sprite_struct shot_sprite;
+struct sprite_struct friendlyshot_sprite;
 struct sprite_struct enemyshot_sprite;
 struct sprite_struct electrickomi_sprite;
 
@@ -256,6 +283,7 @@ struct sprite_struct tonguemask_sprite;
 struct sprite_struct pickupmask_sprite;
 
 struct sprite_struct * spritemap[ENEMYTYPES];
+struct sprite_struct * powerupspritemap[POWERUPTYPES];
 
 struct sprite_struct maintitle_title;
 struct sprite_struct bolts_title;
@@ -263,7 +291,6 @@ struct sprite_struct start_title;
 struct sprite_struct quit_title;
 struct sprite_struct gpl_title;
 
-Mix_Chunk * bounce_sound = NULL;
 Mix_Chunk * contactdeath_sound = NULL;
 Mix_Chunk * destructorkill_sound = NULL;
 Mix_Chunk * eat_sound = NULL;

@@ -8,13 +8,13 @@ DATAPATH=/usr/local/share/komidata/
 BINPATH=/usr/local/bin/
 
 MIXER=-lSDL_mixer
-SDL_LIB=$(shell sdl-config --static-libs) $(MIXER) -lSDL_image
+SDL_LIB=$(shell sdl-config --static-libs) $(MIXER)
 
 CFLAGS=-Wall -Wno-long-long -pedantic -std=c99 -O2 \
 	$(shell sdl-config --cflags) \
-        -DDATAPATH=\"$(DATAPATH)\"
+	-DDATAPATH=\"$(DATAPATH)\"
 
-all:	 komi
+all:	komi
 
 clean:
 	-rm komi
@@ -28,7 +28,7 @@ install:
 	cp komi $(BINPATH)
 	chmod 755 $(BINPATH)komi
 
-komi:		komi.o
-		$(CC) $(CFLAGS) komi.o -o komi $(SDL_LIB)
+komi:	komi.o
+	$(CC) $(CFLAGS) komi.o -o komi $(SDL_LIB)
 
-komi.o:		komi.c
+komi.o:	komi.c

@@ -1,21 +1,24 @@
-/* gfx_sdl.h -- some drawing routines for SDL */
-/* Copyright Allan Crossman, 2004 */
+// gfx_sdl.h -- some drawing routines for SDL
 
 /* 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to:
+    
+       The Free Software Foundation, Inc.
+       59 Temple Place - Suite 330
+       Boston, MA  02111-1307
+       USA
+*/
 
 #include <math.h>
 #include <assert.h>
@@ -23,7 +26,6 @@
 #include <stdlib.h>
 
 #include <SDL.h>
-#include <SDL_image.h>
 
 
 #define setrgb(screen, x, y, red, green, blue) putpixel(screen, x, y, SDL_MapRGB(screen->format, red, green, blue))
@@ -234,7 +236,12 @@ void rect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, 
          line(bitmapstruct, x2 - 1, y1 + 1, x2 - 1, y2 - 2, red, green, blue);
       }
    }
-   
+
+   if (fastdraw)
+   {
+      updaterectsarray(x1, y1, x2 - x1, y2 - y1);
+   }
+
    return;
 }
 
@@ -256,6 +263,12 @@ void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red,
          setrgb(bitmapstruct, x, y, red, green, blue);
       }
    }
+   
+   if (fastdraw)
+   {
+      updaterectsarray(x1, y1, x2 - x1, y2 - y1);
+   }
+   
    return;
 }
 
@@ -275,3 +288,29 @@ void cls (SDL_Surface * bitmapstruct, int red, int green, int blue)
    return;
 }
 
+
+void updaterectsarray (int leftx, int topy, int width, int height)
+{
+   int rightx;
+   int bottomy;
+   
+   assert(rects >= 0 && rects < MAXRECTS);
+   
+   rightx = leftx + width;        // rightx is actually one pixel past the rightmost pixel.
+   bottomy = topy + height;       // and bottomy is one past the bottommost pixel
+
+   if (leftx < 0) leftx = 0;
+   if (topy < 0) topy = 0;
+   if (rightx > WIDTH) rightx = WIDTH;
+   if (bottomy > HEIGHT) bottomy = HEIGHT;
+   
+   if (leftx < rightx && topy < bottomy)
+   {
+      width = rightx - leftx;
+      height = bottomy - topy;
+      updaterect[rects].x = leftx; updaterect[rects].y = topy; updaterect[rects].w = width; updaterect[rects].h = height;
+      rects++;
+   }
+   
+   return;
+}
