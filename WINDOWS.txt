@@ -15,3 +15,5 @@ Compilation on Windows via MinGW and msys is known to work. But you must:
 
   * Once compiled, you may need to add the SDL.dll and SDL_mixer.dll files to the
     directory the komi application is in.
+
+In my rather unscientific test, the Windows version seemed to be quite a bit slower than the Linux version. Is it OK for you on Windows? Email me feedback to acrossman@users.sourceforge.net

@@ -199,6 +199,9 @@ void _line_steep (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, in
 
 void line (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue)
 {
+
+   // Lock the surface before calling.
+
    if (x1 == x2 || y1 == y2 || abs(x1 - x2) == abs(y1 - y2))
    {
       _line_straight(bitmapstruct, x1, y1, x2, y2, red, green, blue);
@@ -248,7 +251,7 @@ void rect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, 
 
 void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue)
 {
-   int x, y;
+   SDL_Rect therect;
    
    if ((x2 <= x1) || (y2 <= y1))
    {
@@ -256,13 +259,12 @@ void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red,
       return;
    }
    
-   for (x = x1; x < x2; x++)
-   {
-      for (y = y1; y < y2; y++)
-      {
-         setrgb(bitmapstruct, x, y, red, green, blue);
-      }
-   }
+   therect.x = x1;
+   therect.y = y1;
+   therect.w = x2 - x1;
+   therect.h = y2 - y1;
+   
+   SDL_FillRect(bitmapstruct, &therect, SDL_MapRGB(bitmapstruct->format, red, green, blue));
    
    if (fastdraw)
    {
@@ -275,16 +277,7 @@ void frect (SDL_Surface * bitmapstruct, int x1, int y1, int x2, int y2, int red,
 
 void cls (SDL_Surface * bitmapstruct, int red, int green, int blue)
 {
-   int x;
-   int y;
-   
-   for (x = 0; x < bitmapstruct->w; x++)
-   {
-      for (y = 0; y < bitmapstruct->h; y++)
-      {
-         setrgb(bitmapstruct, x, y, red, green, blue);
-      }
-   }
+   frect(bitmapstruct, 0, 0, bitmapstruct->w, bitmapstruct->h, red, green, blue);
    return;
 }
 

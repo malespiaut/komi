@@ -89,6 +89,11 @@ int main (int argc, char * argv[]) {
       if (strcmp(argv[n], "--nosound") == 0 || strcmp(argv[n], "--nosounds") == 0)
       {
          nosound = 1;
+         nomusic = 1;
+      }
+      if (strcmp(argv[n], "--nomusic") == 0)
+      {
+         nomusic = 1;
       }
       if (strcmp(argv[n], "--fastdraw") == 0)
       {
@@ -98,6 +103,10 @@ int main (int argc, char * argv[]) {
       if (strcmp(argv[n], "--hog") == 0)
       {
          hog = 1;
+      }
+      if (strcmp(argv[n], "--shuffle") == 0)
+      {
+         shuffle = 1;
       }
       if (strcmp(argv[n], "--algorithmic") == 0)
       {
@@ -145,6 +154,7 @@ int main (int argc, char * argv[]) {
    
    loadprefs(filepath, "prefs");
    saveprefs(filepath, "prefs");    // In case of command line arguments needing to be saved.
+                                    // Or in case of first-run.
    
    if (nosound == 0)
    {
@@ -167,8 +177,13 @@ int main (int argc, char * argv[]) {
       {
          fprintf(stderr, "Unable to open audio. %s\n", SDL_GetError());
          nosound = 1;
+         nomusic = 1;
       } else {
          loadsounds();
+         // if (nomusic == 0)
+         // {
+         //    playmusic(filepath, "music.mod", -1);
+         // }
       }
    }
    
@@ -181,7 +196,7 @@ int main (int argc, char * argv[]) {
    }
    
    srand((int)time(NULL));
-   
+
    for (n = 0; n < MAXSTARS; n++)
    {
       star[n].speed = 0;
@@ -199,7 +214,11 @@ int main (int argc, char * argv[]) {
 
 void menu (void)
 {
-   drawmenu();
+
+   int highlight_start = 0;
+   int highlight_quit = 0;
+
+   drawmenu(highlight_start, highlight_quit);
    while (1)
    {
       keymap.escape = 0;      // So we don't respond to escape pressed in game.
@@ -207,25 +226,57 @@ void menu (void)
       
       manageevents();
       
+      // Highlight the start button, if necessary...
+      if (abs(mousemap.currentx - STARTBUTTON_X) < start_title.pixelmap->w / 2 && abs(mousemap.currenty - STARTBUTTON_Y) < start_title.pixelmap->h / 2)
+      {
+         if (highlight_start == 0)
+         {
+            highlight_start = 1;
+            drawmenu(highlight_start, highlight_quit);
+         }
+      } else {
+         if (highlight_start == 1)
+         {
+            highlight_start = 0;
+            drawmenu(highlight_start, highlight_quit);
+         }
+      }
+
+      // Highlight the quit button, if necessary...
+      if (abs(mousemap.currentx - QUITBUTTON_X) < quit_title.pixelmap->w / 2 && abs(mousemap.currenty - QUITBUTTON_Y) < quit_title.pixelmap->h / 2)
+      {
+         if (highlight_quit == 0)
+         {
+            highlight_quit = 1;
+            drawmenu(highlight_start, highlight_quit);
+         }
+      } else {
+         if (highlight_quit == 1)
+         {
+            highlight_quit = 0;
+            drawmenu(highlight_start, highlight_quit);
+         }
+      }
+      
       if (keymap.escape)
       {
          cleanexit(0);
       }
       if (mousemap.button)
       {
-         if (abs(mousemap.clickx - STARTBUTTON_X) < start_title.width / 2 && abs(mousemap.clicky - STARTBUTTON_Y) < start_title.height / 2)
+         if (abs(mousemap.clickx - STARTBUTTON_X) < start_title.pixelmap->w / 2 && abs(mousemap.clicky - STARTBUTTON_Y) < start_title.pixelmap->h / 2)
          {
             SDL_ShowCursor(SDL_DISABLE);
             game();
             SDL_ShowCursor(SDL_ENABLE);
-            if (score > highscore)
+            if (score > highscore && cheats == 0 && invincible == 0)
             {
                highscore = score;
                saveprefs(filepath, "prefs");
             }
             setmaintitlebar();
-            drawmenu();
-         } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.width / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.height / 2) {
+            drawmenu(highlight_start, highlight_quit);
+         } else if (abs(mousemap.clickx - QUITBUTTON_X) < quit_title.pixelmap->w / 2 && abs(mousemap.clicky - QUITBUTTON_Y) < quit_title.pixelmap->h / 2) {
             cleanexit(0);
          } else {
             checkspeedadjust();
@@ -240,6 +291,8 @@ void menu (void)
 void game (void)
 {
    int gameoverflag;
+   
+   shufflelevels();
    
    level = 1;
    lives = START_LIVES;
@@ -319,7 +372,7 @@ int playlevel (void)
    mousemap.button = 0;
 
    cls(virtue, 0, 0, 0);
-   SDL_Flip(virtue);
+   SDL_UpdateRect(virtue, 0, 0, 0, 0);
    updatetitlebar();
    
    if (lives == 1 && givelastlifewarning && fullscreen)
@@ -340,6 +393,8 @@ int playlevel (void)
    while(1)
    {
       tick++;
+      
+      rnd();   // Pump rnd() every frame for (hopefully) more randomness when it matters.
       
       if (freeze)
       {
@@ -371,11 +426,12 @@ int playlevel (void)
       
       movesprites();
       drawsprites();
+
       if (fastdraw)
       {
          SDL_UpdateRects(virtue, rects, updaterect);
       } else {
-         SDL_Flip(virtue);
+         SDL_UpdateRect(virtue, 0, 0, 0, 0);
       }
       rects = 0;
       
@@ -417,24 +473,21 @@ int playlevel (void)
          playsound(pause_sound);
          keymap.pause = 0;
          keymap.left1 = 0;
-         keymap.right1 = 0;
          keymap.left2 = 0;
+         keymap.left3 = 0;
+         keymap.right1 = 0;
          keymap.right2 = 0;
-         keymap.fire = 0;
-         while (keymap.pause == 0 &&
-                keymap.pause == 0 &&
-                keymap.left1 == 0 &&
-                keymap.right1 == 0 &&
-                keymap.left2 == 0 &&
-                keymap.right2 == 0 &&
-                keymap.fire == 0)
+         keymap.right3 = 0;
+         keymap.fire1 = 0;
+         keymap.fire2 = 0;
+         while ((keymap.pause | keymap.left1 | keymap.left2 | keymap.left3 | keymap.right1 | keymap.right2 | keymap.right3 | keymap.fire1 | keymap.fire2) == 0)
          {
             manageevents();
             if (keymap.escape)
             {
                return QUIT;
             }
-               if (keymap.screenshot)
+            if (keymap.screenshot)
             {
                screenshot(virtue, "", "komiscreen.bmp");
                keymap.screenshot = 0;
@@ -469,11 +522,11 @@ void movesprites (void)
       }
    }
 
-   if (keymap.left1 || keymap.left2)
+   if (keymap.left1 || keymap.left2 || keymap.left3)
    {
       komix = komix - KOMI_SPEED;
    }
-   if (keymap.right1 || keymap.right2)
+   if (keymap.right1 || keymap.right2 || keymap.right3)
    {
       komix = komix + KOMI_SPEED;
    }
@@ -481,19 +534,20 @@ void movesprites (void)
    if (komix < WALL) komix = WALL;
    if (komix > WIDTH - WALL) komix = WIDTH - WALL;
    
-   if (keymap.fire && tonguelength == 0)
+   if ((keymap.fire1 || keymap.fire2) && tonguelength == 0)
    {
       if (shotsavailable > 0)
       {
          addkomishot();
          shotsavailable--;
-         keymap.fire = 0;
+         keymap.fire1 = 0;
+         keymap.fire2 = 0;
       } else {
          tonguespeed = TONGUE_SPEED;
       }
    }
 
-   if (tonguespeed > 0 && keymap.fire == 0)
+   if (tonguespeed > 0 && keymap.fire1 == 0 && keymap.fire2 == 0)
    {
       if (fastretract == 0)
       {
@@ -606,19 +660,6 @@ void movesprites (void)
          }
       }
    }
-   
-   for (n = 0; n < MAX_ENEMYSHOTS; n++)
-   {
-      if (enemyshot[n].exists)
-      {
-         enemyshot[n].x += enemyshot[n].speedx;
-         enemyshot[n].y += enemyshot[n].speedy;
-         if (enemyshot[n].x < (SPRITE_SIZE / 2) * -1 || enemyshot[n].x > WIDTH + (SPRITE_SIZE / 2) || enemyshot[n].y < (SPRITE_SIZE / 2) * -1 || enemyshot[n].y > HEIGHT + (SPRITE_SIZE / 2))
-         {
-            enemyshot[n].exists = 0;
-         }
-      }
-   }
 
    for (n = 0; n < MAX_FRIENDLYSHOTS; n++)
    {
@@ -684,23 +725,26 @@ void movesprites (void)
       }
    }
    
-   for (n = 0; n < POWERUPTYPES; n++)
+   if (goodie.exists == 0 && tick < POWERUPCUTOFFTIME)
    {
-      if (goodie.exists == 0 && rnd() < levelinfo.powerup_prob[n] && tick < POWERUPCUTOFFTIME)
+      for (n = 0; n < POWERUPTYPES; n++)
       {
-         goodie.exists = 1;
-         goodie.type = n;
-         goodie.x = rnd() * WIDTH;
-         goodie.y = 0;
-         if (goodie.x > WIDTH / 2)
+         if (rnd() < levelinfo.powerup_prob[n])
          {
-            goodie.speedx = -2;
-         } else {
-            goodie.speedx = 2;
+            goodie.exists = 1;
+            goodie.type = n;
+            goodie.x = rnd() * WIDTH;
+            goodie.y = 0;
+            if (goodie.x > WIDTH / 2)
+            {
+               goodie.speedx = -2;
+            } else {
+               goodie.speedx = 2;
+            }
+            goodie.speedy = 1;
+            playsound(powerup_sound);
+            break;
          }
-         goodie.speedy = 1;
-         playsound(powerup_sound);
-         break;
       }
    }
    
@@ -718,6 +762,19 @@ void movesprites (void)
          if (lightningy >= levelinfo.fastlightningy)
          {
             playsound(lightningwarning_sound);
+         }
+      }
+      
+      for (n = 0; n < MAX_ENEMYSHOTS; n++)
+      {
+         if (enemyshot[n].exists)
+         {
+            enemyshot[n].x += enemyshot[n].speedx;
+            enemyshot[n].y += enemyshot[n].speedy;
+            if (enemyshot[n].x < (SPRITE_SIZE / 2) * -1 || enemyshot[n].x > WIDTH + (SPRITE_SIZE / 2) || enemyshot[n].y < (SPRITE_SIZE / 2) * -1 || enemyshot[n].y > HEIGHT + (SPRITE_SIZE / 2))
+            {
+               enemyshot[n].exists = 0;
+            }
          }
       }
    
@@ -1089,15 +1146,6 @@ void movelasergun (int n)
       enemy[n].speedy = fabs(enemy[n].speedy) * -1;
    }
    
-   if (tick % enemy[n].intvar == enemy[n].intvar - LASERWARNTIME)
-   {
-      playsound(laserpowerup_sound);
-   }
-   if (tick % enemy[n].intvar == 0 && tick >= enemy[n].intvar)
-   {
-      playsound(laser_sound);
-   }
-   
    return;
 }
 
@@ -1263,21 +1311,29 @@ void drawsprites (void)   /*  everything drawn here needs to be cleared at clear
       }
    }
    
-   // Draw pre-laser
+   // Draw pre-laser... (and play the sound if necessary - this seems the best place to play the sound)
    for (n = 0; n < MAX_ENEMIES; n++)
    {
       if (enemy[n].exists && enemy[n].type == LASERGUN && (tick % enemy[n].intvar) >= (enemy[n].intvar - LASERWARNTIME))
       { 
          frect(virtue, 0, enemy[n].y - (LASERWIDTH / 2), WIDTH, enemy[n].y + (LASERWIDTH / 2), WARNLASER_R, WARNLASER_G, WARNLASER_B);
+         if (tick % enemy[n].intvar == enemy[n].intvar - LASERWARNTIME)
+         {
+            playsound(laserpowerup_sound);
+         }
       }
    }
-   
-   // Draw laser...
+
+   // Draw laser... (and play the sound if necessary - this seems the best place to play the sound)
    for (n = 0; n < MAX_ENEMIES; n++)
    {
       if (enemy[n].exists && enemy[n].type == LASERGUN && tick % enemy[n].intvar < LASERDURATION && tick >= enemy[n].intvar)
       {
          frect(virtue, 0, enemy[n].y - (LASERWIDTH / 2), WIDTH, enemy[n].y + (LASERWIDTH / 2), LASER_R, LASER_G, LASER_B);
+         if (tick % enemy[n].intvar == 0)
+         {
+            playsound(laser_sound);
+         }
       }
    }
    
@@ -1575,8 +1631,8 @@ void blanklevel (void)
 {
    int n;
    
-   /* Anything that can be set by choosenumbers() needs to be set to a default value here.      */
-   /* Also clear all objects (with the exception of coins + diamonds if this isn't a new level. */
+   // Anything that can be set by choosenumbers() needs to be set to a default value here.
+   // Also clear all objects (with the exception of coins + diamonds if this isn't a new level).
 
    lightningcheck = LIGHTNINGCHECK_DEFAULT;
    lightningy = START_LIGHTNING_Y;
@@ -1657,16 +1713,25 @@ void blanklevel (void)
 void choosenumbers (void)
 {
 
-   int coins;       // Local variables which will only be copied to the globals
-   int diamonds;    // if resetmoney is flagged (due to this being a new level).
+   int coins;         // Local variables which will only be copied to the globals
+   int diamonds;      // if resetmoney is flagged (due to this being a new level).
+
+   int pretendlevel;  // Used for shuffled levels; we pretend we're on this level.
+   
+   if (shuffle == 0 || level > SHUFFLEDLEVELS)
+   {
+      pretendlevel = level;
+   } else {
+      pretendlevel = shuffledlevels[level - 1];
+   }
 
    // Default values, may be over-ridden in a moment.
-   coins = (level / 2.5) + 2;
-   diamonds = (level % 2) + 1;
+   coins = (pretendlevel / 2.5) + 2;
+   diamonds = (pretendlevel % 2) + 1;
    
    if (algorithmicenemies == 0)
    {
-      switch (level)
+      switch (pretendlevel)
       {
          case 1 :
             levelinfo.enemycount[BOUNCER] = 1;
@@ -1725,17 +1790,17 @@ void choosenumbers (void)
             levelinfo.enemycount[GUNNER] = 2;
             levelinfo.enemycount[DIVER] = 4;
             levelinfo.topdiamonds = 0;
-               coins = 7;
+               coins = 6;
                diamonds = 2;
             break;
          case 10 :
-            levelinfo.electrasflag = 1;
-            levelinfo.enemycount[GUNNER] = 3;
-            levelinfo.enemycount[SCROLLERRIGHT] = 2;
-            levelinfo.enemycount[BROWNIAN] = 2;
-            lightningcheck = 40;
-            levelinfo.topdiamonds = 0;
-            levelinfo.electraoffset = 0;
+            levelinfo.enemycount[DROPPER] = 7;
+            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.enemycount[ROAMER] = 1;
+            levelinfo.gunnershootprob = GUNNER_SHOOT_PROB_DEFAULT * 0.5;
+               coins = 4;
+               diamonds = 2;
+            lightningcheck = 60;
             break;
          case 11 :
             levelinfo.enemycount[SCROLLERLEFT] = 2;
@@ -1756,45 +1821,46 @@ void choosenumbers (void)
             levelinfo.enemycount[GUNNER] = 1;
             levelinfo.guardianaccels = 1;
             levelinfo.electraoffset = 0;
+            lightningcheck = 80;
                coins = 5;
                diamonds = 1;
             break;
          case 13 :
-            levelinfo.enemycount[BOUNCER] = 2;
-            levelinfo.enemycount[GUNNER] = 2;
-            levelinfo.enemycount[SCROLLERLEFT] = 2;
-            levelinfo.enemycount[SCROLLERRIGHT] = 2;
-            levelinfo.enemycount[ROAMER] = 3;
-               coins = 5;
-               diamonds = 1;
+            levelinfo.enemycount[DIVER] = 9;
+            levelinfo.enemycount[BOUNCER] = 1;
+            levelinfo.topdiamonds = 0;
+               coins = 3;
+               diamonds = 2;
             break;
          case 14 :
-            levelinfo.enemycount[DIVER] = 4;
-            levelinfo.enemycount[SKULL] = 1;
-            levelinfo.enemycount[BOUNCER] = 2;
-               coins = 5;
-               diamonds = 0;
-            break;
-         case 15 :
             levelinfo.enemycount[DROPPER] = 4;
             levelinfo.enemycount[GUNNER] = 3;
             levelinfo.gunnershootprob = 0.005;
                coins = 4;
                diamonds = 2;
             break;
+         case 15 :
+            levelinfo.enemycount[EYEBALL] = 2;
+            levelinfo.enemycount[WRAPBALL] = 1;  
+            levelinfo.enemycount[GUNNER] = 1;
+               coins = 3;
+               diamonds = 4;
+            lightningcheck = 100;
+            break;
          case 16 :
-            levelinfo.enemycount[BOUNCER] = 4;
-            levelinfo.enemycount[SCROLLERLEFT] = 2;
-            levelinfo.enemycount[SCROLLERRIGHT] = 3;
-            levelinfo.enemycount[DIVER] = 1;
-            lightningcheck = 100000000;
-               diamonds = 2;
+            levelinfo.enemycount[DIVER] = 4;
+            levelinfo.enemycount[SKULL] = 1;
+            levelinfo.enemycount[BOUNCER] = 2;
+               coins = 5;
+               diamonds = 0;
             break;
          case 17 :
             levelinfo.enemycount[GUNNER] = 2;
             levelinfo.enemycount[ACCELERATOR] = 2;
             levelinfo.enemycount[ROAMER] = 2;
             levelinfo.guardianaccels = 1;
+               coins = 7;
+               diamonds = 1;
             break;
          case 18 :
             levelinfo.enemycount[SKULL] = 1;
@@ -1849,19 +1915,24 @@ void choosenumbers (void)
                diamonds = 1;
             break;
          case 24 :
-            levelinfo.enemycount[DIVER] = 9;
-            levelinfo.enemycount[BOUNCER] = 1;
-            levelinfo.topdiamonds = 0;
-               coins = 2;
-               diamonds = 2;
+            levelinfo.enemycount[BOUNCER] = 2;
+            levelinfo.enemycount[GUNNER] = 2;
+            levelinfo.enemycount[SCROLLERLEFT] = 2;
+            levelinfo.enemycount[SCROLLERRIGHT] = 2;
+            levelinfo.enemycount[ROAMER] = 3;
+               coins = 5;
+               diamonds = 1;
             break;
          case 25 :
-            levelinfo.enemycount[EYEBALL] = 2;
-            levelinfo.enemycount[WRAPBALL] = 1;  
-            levelinfo.enemycount[GUNNER] = 1;
+            levelinfo.electrasflag = 1;
+            levelinfo.enemycount[GUNNER] = 3;
+            levelinfo.enemycount[SCROLLERRIGHT] = 2;
+            levelinfo.enemycount[BROWNIAN] = 2;
+            lightningcheck = 40;
+            levelinfo.topdiamonds = 0;
+            levelinfo.electraoffset = 0;
                coins = 3;
                diamonds = 4;
-            lightningcheck = 100;
             break;
          case 26 :
             levelinfo.enemycount[SCROLLERLEFT] = 2;
@@ -1890,11 +1961,11 @@ void choosenumbers (void)
                diamonds = 1;
             break;
          default :
-            algorithmicenemynumbers(level);
+            algorithmicenemynumbers(pretendlevel);
             break;
       }
    } else {
-      algorithmicenemynumbers(level);
+      algorithmicenemynumbers(pretendlevel);
    }
    
    if (resetmoney)
@@ -2509,29 +2580,41 @@ void playsound (Mix_Chunk * thesound)   // Pass sound pointer to Mix_PlayChannel
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void drawmenu (void)    // Draw all the graphical stuff on the title screen. Locations predefined.
+void drawmenu (int highlight_start, int highlight_quit)    // Draw all the graphical stuff on the title screen. Locations predefined.
+                                                           // Highlight the buttons if so flagged.
 {
    rects = 0;   // In case drawing all this would push rects over the max.
 
    cls(virtue, 0, 0, 0);
    drawsprite(&maintitle_title, virtue, MAINTITLE_X, MAINTITLE_Y);
    drawsprite(&gpl_title, virtue, GPL_X, GPL_Y);
+
+   if (highlight_start == 0)
+   {
+      drawsprite(&start_title, virtue, STARTBUTTON_X, STARTBUTTON_Y);
+   } else {
+      drawsprite(&start2_title, virtue, STARTBUTTON_X, STARTBUTTON_Y);
+   }
    
-   drawsprite(&start_title, virtue, STARTBUTTON_X, STARTBUTTON_Y);
-   drawsprite(&quit_title, virtue, QUITBUTTON_X, QUITBUTTON_Y);
+   if (highlight_quit == 0)
+   {
+      drawsprite(&quit_title, virtue, QUITBUTTON_X, QUITBUTTON_Y);
+   } else {
+      drawsprite(&quit2_title, virtue, QUITBUTTON_X, QUITBUTTON_Y);
+   }
    
    drawsprite(&bolts_title, virtue, BOLTSTITLE_X, BOLTSTITLE_Y);
    drawsprite(&diamond_sprite, virtue, DIAMONDTITLE_X, DIAMONDTITLE_Y);
    drawsprite(&komi_sprite, virtue, KOMITITLE_X, KOMITITLE_Y);
    drawsprite(&diver_sprite, virtue, DIVERTITLE_X, DIVERTITLE_Y);
    
-   drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X - (bolts_title.width / 2)) - ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
-   drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X + (bolts_title.width / 2)) + ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
+   drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X - (bolts_title.pixelmap->w / 2)) - ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
+   drawsprite(&generator_sprite, virtue, (BOLTSTITLE_X + (bolts_title.pixelmap->w / 2)) + ((SPRITE_SIZE / 2) - (SPRITE_SIZE - LIGHTNINGADJUST)), BOLTSTITLE_Y);
    
    drawsprite(&speed_title, virtue, SPEEDTITLE_X, SPEEDTITLE_Y);
    drawspeedrect();
    
-   SDL_Flip(virtue);
+   SDL_UpdateRect(virtue, 0, 0, 0, 0);
    return;
 }
 
@@ -2577,7 +2660,7 @@ void checkspeedadjust (void)
       if (delay > LONGESTDELAY) delay = LONGESTDELAY;
       saveprefs(filepath, "prefs");
       drawspeedrect();
-      SDL_Flip(virtue);
+      SDL_UpdateRect(virtue, 0, 0, 0, 0);
    }
    return;
 }
@@ -2596,12 +2679,18 @@ void updatekeymap (void)
          keymap.left1 = 1;
       if (event.key.keysym.sym == LeftKey2)
          keymap.left2 = 1;
+      if (event.key.keysym.sym == LeftKey3)
+         keymap.left3 = 1;
       if (event.key.keysym.sym == RightKey1)
          keymap.right1 = 1;
       if (event.key.keysym.sym == RightKey2)
          keymap.right2 = 1;
-      if (event.key.keysym.sym == FireKey)
-         keymap.fire = 1;
+      if (event.key.keysym.sym == RightKey3)
+         keymap.right3 = 1;
+      if (event.key.keysym.sym == FireKey1)
+         keymap.fire1 = 1;
+      if (event.key.keysym.sym == FireKey2)
+         keymap.fire2 = 1;
       if (event.key.keysym.sym == LevelSkip)
          keymap.levelskip = 1;
       if (event.key.keysym.sym == PauseKey)
@@ -2615,12 +2704,18 @@ void updatekeymap (void)
          keymap.left1 = 0;
       if (event.key.keysym.sym == LeftKey2)
          keymap.left2 = 0;
+      if (event.key.keysym.sym == LeftKey3)
+         keymap.left3 = 0;
       if (event.key.keysym.sym == RightKey1)
          keymap.right1 = 0;
       if (event.key.keysym.sym == RightKey2)
          keymap.right2 = 0;
-      if (event.key.keysym.sym == FireKey)
-         keymap.fire = 0;
+      if (event.key.keysym.sym == RightKey3)
+         keymap.right3 = 0;
+      if (event.key.keysym.sym == FireKey1)
+         keymap.fire1 = 0;
+      if (event.key.keysym.sym == FireKey2)
+         keymap.fire2 = 0;
       if (event.key.keysym.sym == LevelSkip)
          keymap.levelskip = 0;
       if (event.key.keysym.sym == PauseKey)
@@ -2642,6 +2737,9 @@ void updatemousemap (void)   // Keeps track of whether the mouse button is down,
       mousemap.clicky = event.button.y;
    } else if (event.type == SDL_MOUSEBUTTONUP) {
       mousemap.button = 0;
+   } else if (event.type == SDL_MOUSEMOTION) {
+      mousemap.currentx = event.motion.x;
+      mousemap.currenty = event.motion.y;
    }
    return;
 }
@@ -2654,10 +2752,10 @@ void manageevents (void)   // Manage relevant keyboard, mouse, and quit events.
    {
       if (event.type == SDL_QUIT)
       {
-         cleanexit(1);
+         cleanexit(0);
       } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
          updatekeymap();
-      } else if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+      } else if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP || event.type == SDL_MOUSEMOTION) {
          updatemousemap();
       }
    }
@@ -2688,6 +2786,8 @@ void dostars (void)
 {
    int n;
    
+   if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
+   
    for (n = 0; n < MAXSTARS; n++)
    {
       if (star[n].speed != 0)     // ie if it exists at all...
@@ -2713,6 +2813,9 @@ void dostars (void)
          }
       }
    }
+   
+   if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
+   
    return;
 }
 
@@ -2751,6 +2854,8 @@ void doelectricity (void)  // Draw lightning between left and right sides, at ve
    int brightness;
    int de_lightningdeath_flag = 0;
    int brokenlightningflag = 0;
+   
+   if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
    
    if (lightningdeath())
    {
@@ -2816,6 +2921,8 @@ void doelectricity (void)  // Draw lightning between left and right sides, at ve
       }
    }
    
+   if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
+   
    return;
 }
 
@@ -2847,7 +2954,7 @@ void fadeout (void)    // Not so much a fade as a series of black lines...
       line(virtue, 0, n, WIDTH - 1, n, 0, 0, 0);
       if (n % 10 == 0)
       {
-         SDL_Flip(virtue);
+         SDL_UpdateRect(virtue, 0, 0, 0, 0);
          SDL_Delay(5);
          manageevents();
       }
@@ -2858,13 +2965,13 @@ void fadeout (void)    // Not so much a fade as a series of black lines...
       line(virtue, 0, n, WIDTH - 1, n, 0, 0, 0);
       if ((n + 1) % 10 == 0)
       {
-         SDL_Flip(virtue);
+         SDL_UpdateRect(virtue, 0, 0, 0, 0);
          SDL_Delay(5);
          manageevents();
       }
    }
    
-   SDL_Flip(virtue);
+   SDL_UpdateRect(virtue, 0, 0, 0, 0);
    return;
 }
 
@@ -2898,6 +3005,7 @@ void screenshot (SDL_Surface * surface, char * directory, char * filename)
    if (SDL_SaveBMP(surface, fullpath) == 0)
    {
       fprintf(stdout, "Saved screenshot to %s\n", fullpath);
+      playsound(screenshot_sound);
    } else {
       fprintf(stdout, "Failed to save screenshot to %s\n", fullpath);
    }
@@ -2915,6 +3023,8 @@ void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightn
    int finishedthisline;
    int brightness;
    int temp;
+
+   if (SDL_MUSTLOCK(virtue)) SDL_LockSurface(virtue);
 
    if (x1 > x2)
    {
@@ -2956,6 +3066,9 @@ void doelectrabolts (int x1, int y, int x2)   // Draw the Electra enemy's lightn
          }
       }
    }
+   
+   if (SDL_MUSTLOCK(virtue)) SDL_UnlockSurface(virtue);
+   
    return;
 }
 
@@ -2965,6 +3078,8 @@ void dobrokenlightning (int leftelectrax, int rightelectrax)   // Draw lightning
                                                                // But draw nothing between x and y.
                                                                // Called when Electras exist and are level with lightning.
 {
+
+   // Note that virtue should be locked before calling this.
 
    int n;
    int currentx, currenty;
@@ -3251,7 +3366,7 @@ void addscore (int num)    // Also checks if we're over the points required to g
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void saveprefs(char * directory, char * filename)
+void saveprefs (char * directory, char * filename)
 {
    char fullpath[TEXTBUFFERSIZE];
 
@@ -3269,7 +3384,7 @@ void saveprefs(char * directory, char * filename)
    
    if ((outfile = fopen(fullpath, "wb")) == NULL)
    {
-      fprintf(stderr, "Failed to open prefs file %s\n", fullpath);
+      fprintf(stderr, "Failed to open prefs file %s for save.\n", fullpath);
       return;
    } else {
       putc(PREFSVERSION, outfile);                    // Save preferences version (for check at load)
@@ -3286,7 +3401,7 @@ void saveprefs(char * directory, char * filename)
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void loadprefs(char * directory, char * filename)
+void loadprefs (char * directory, char * filename)
 {
    char fullpath[TEXTBUFFERSIZE];
 
@@ -3305,7 +3420,7 @@ void loadprefs(char * directory, char * filename)
    
    if ((infile = fopen(fullpath, "rb")) == NULL)
    {
-      fprintf(stderr, "Failed to open prefs file %s\n", fullpath);
+      fprintf(stderr, "Failed to open prefs file %s for load.\n", fullpath);
       fprintf(stderr, "Attempting to write defaults to it...\n");
       saveprefs(directory, filename);                                     // If we fail, try to save / create the file instead.
       return;
@@ -3354,5 +3469,79 @@ void setmaintitlebar (void)
    
    sprintf(thestring, "Komi %s  -  Highscore: %d", VERSION, highscore);
    SDL_WM_SetCaption(thestring, NULL);
+   return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+int playmusic (char * directory, char * filename, int loops)
+{
+   char fullpath[TEXTBUFFERSIZE];
+   FILE * testopen;
+
+   if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
+   {
+      fprintf(stderr, "Error while loading %s:\n", filename);
+      fprintf(stderr, "Size of directory name (%d chars) plus size of file name (%d chars)\n", strlen(directory), strlen(filename));
+      fprintf(stderr, "is too long (over %d chars), and would cause a buffer overflow...\n", sizeof(fullpath) - 1);
+      return 1;
+   }
+   strcpy(fullpath, directory);
+   strcat(fullpath, filename);
+   
+   if (music != NULL)
+   {
+      fprintf(stderr, "Error: music != NULL.\n");
+      fprintf(stderr, "Taking no action...\n");
+      return 1;
+   }
+
+   if ((testopen = fopen(fullpath, "rb")) == NULL)
+   {
+      fprintf(stderr, "Failed to open %s\n", fullpath);
+      return 1;
+   } else {
+      fclose(testopen);
+   }
+   
+   music = Mix_LoadMUS(fullpath);
+   if (music == NULL)
+   {
+      fprintf(stderr, "Error loading %s. %s\n", fullpath, Mix_GetError());
+      return 1;
+   }
+   
+   if (Mix_PlayMusic(music, loops))     // Try to play the music...
+   {
+      fprintf(stderr, "Mix_PlayMusic() returned an error.");
+      music = NULL;
+      return 1;
+   }
+   
+   return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void shufflelevels (void)
+{
+   int n;
+   int first, second;
+   int temp;
+   
+   for (n = 0; n < SHUFFLEDLEVELS; n++)
+   {
+      shuffledlevels[n] = n + 1;
+   }
+   
+   for (n = 0; n < 1000; n++)
+   {
+      first = intrnd(SHUFFLEDLEVELS - 1);
+      second = intrnd(SHUFFLEDLEVELS - 1);
+      temp = shuffledlevels[first];
+      shuffledlevels[first] = shuffledlevels[second];
+      shuffledlevels[second] = temp;
+   }
+   
    return;
 }

@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 // Definitions...
 
-#define VERSION "0.9b"
+#define VERSION "0.95b"
 #define PREFSVERSION 1    // Increment this if prefs format changes.
 
 // Window size.
@@ -123,26 +123,28 @@
 #define GPL_X 320
 #define GPL_Y 175
 #define BOLTSTITLE_X 300
-#define BOLTSTITLE_Y 315
+#define BOLTSTITLE_Y 325
 #define DIAMONDTITLE_X 340
-#define DIAMONDTITLE_Y 285
+#define DIAMONDTITLE_Y 295
 #define KOMITITLE_X 270
-#define KOMITITLE_Y 360
+#define KOMITITLE_Y 370
 #define DIVERTITLE_X 250
-#define DIVERTITLE_Y 270
+#define DIVERTITLE_Y 280
 #define QUITBUTTON_X 585
-#define QUITBUTTON_Y 380
+#define QUITBUTTON_Y 385
 #define STARTBUTTON_X 520
-#define STARTBUTTON_Y 440
+#define STARTBUTTON_Y 445
 #define SPEEDTITLE_X 85
-#define SPEEDTITLE_Y 440
+#define SPEEDTITLE_Y 445
 #define SPEEDRECTLEFT_X 170
-#define SPEEDRECTTOP_Y 430
+#define SPEEDRECTTOP_Y 435
 #define SPEEDRECTWIDTH 150
 #define SPEEDRECTHEIGHT 20
 
 #define LONGESTDELAY 20      // Delay of this or slower makes the speed rect at the title screen all black.
                              // Can still get longer delays with command line arguments.
+
+#define SHUFFLEDLEVELS 28
 
 // Return values for playlevel()
 #define LEVEL_COMPLETE 1
@@ -174,7 +176,7 @@ struct star_struct {
    float x; float y; int brightness; int age; float speed;};
 
 struct sprite_struct {
-   int width; int height; Uint8 * pixels; Uint8 * visible; bitmask_t * collisionmask;};
+   SDL_Surface * pixelmap; bitmask_t * collisionmask;};
 
 struct baddie_struct {
    int exists; int type; float x; float y; float speedx; float speedy; float floatvar; int intvar; int intvar2;};
@@ -200,11 +202,11 @@ struct friendlyshot_struct {
 
 // Holds flags for whether these keys are down or up.
 struct keymap_struct {
-   int left1; int left2; int right1; int right2; int fire; int escape; int levelskip; int pause; int screenshot;};
+   int left1; int left2; int left3; int right1; int right2; int right3; int fire1; int fire2; int escape; int levelskip; int pause; int screenshot;};
 
 // Holds flag for whether the mouse is down, and what location it clicked on.
 struct mousemap_struct {
-   int button; int clickx; int clicky;};
+   int button; int clickx; int clicky; int currentx; int currenty;};
 
 // Settings that may change for each level.
 struct level_struct {
@@ -261,13 +263,17 @@ int delay = DEFAULT_DELAY;       // Delay between frames.
 // Various options that the user can set with command line arguments.
 int nostarsflag = 0;
 int nosound = 0;
+int nomusic = 0;
 int cheats = 0;
 int invincible = 0;
+int shuffle = 0;
 int algorithmicenemies = 0;
 int fullscreen = 0;
 int fastdraw = 0;
 
 int gotdelayarg = 0;    // Flag raised if "--delay" is used; prevents delay being read from prefs file.
+
+int shuffledlevels[SHUFFLEDLEVELS];
 
 // Position of Komi.
 int komix;
@@ -312,8 +318,8 @@ struct friendlyshot_struct friendlyshot[MAX_FRIENDLYSHOTS];
 
 struct goodie_struct goodie;
 
-struct keymap_struct keymap = {0,0,0,0,0,0,0};
-struct mousemap_struct mousemap = {0,0,0};
+struct keymap_struct keymap = {0,0,0,0,0,0,0,0,0,0,0,0};
+struct mousemap_struct mousemap = {0,0,0,0,0};
 
 // All the sprite types get their own structure.
 struct sprite_struct komi_sprite;
@@ -358,6 +364,8 @@ struct sprite_struct maintitle_title;
 struct sprite_struct bolts_title;
 struct sprite_struct start_title;
 struct sprite_struct quit_title;
+struct sprite_struct start2_title;
+struct sprite_struct quit2_title;
 struct sprite_struct gpl_title;
 struct sprite_struct speed_title;
 
@@ -376,9 +384,13 @@ Mix_Chunk * lightningwarning_sound = NULL;
 Mix_Chunk * oneup_sound = NULL;
 Mix_Chunk * pause_sound = NULL;
 Mix_Chunk * powerup_sound = NULL;
+Mix_Chunk * screenshot_sound = NULL;
 Mix_Chunk * shoot_sound = NULL;
 Mix_Chunk * stick_sound = NULL;
 Mix_Chunk * unfreezewarning_sound = NULL;
+
+// Music...
+Mix_Music * music = NULL;
 
 // Path to the data (sound files, graphics, etc). 
 #ifdef DATAPATH
@@ -386,5 +398,4 @@ char filepath[TEXTBUFFERSIZE] = DATAPATH;
 #else
 char filepath[TEXTBUFFERSIZE] = "komidata/"
 #endif
-
 

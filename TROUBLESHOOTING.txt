@@ -12,7 +12,11 @@ But these are rather drastic steps. Komi can be played without sound, although t
 
   komi --nosound
 
-I do wonder if this problem with KDE is just me though - for me it seems to affect even well known SDL games like frozen-bubble. YMMV. I normally use Fluxbox instead of KDE anyway. :-)
+I do wonder if this problem with KDE is just me though - for me it seems to affect even well known SDL games like frozen-bubble. YMMV. There does not appear to be a segfault under GNOME. I normally use Fluxbox myself, anyway. :-)
+
+Music can be disabled with:
+
+  komi --nomusic
 
 
 Speed Problems

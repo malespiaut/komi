@@ -26,8 +26,10 @@ clean:
 install:
 	install -d $(DATAPATH)
 	cp -R komidata/* $(DATAPATH)
+	touch $(DATAPATH)prefs
 	chmod -R 644 $(DATAPATH)
-	chmod 777 $(DATAPATH)
+	chmod 755 $(DATAPATH)
+	chmod 666 $(DATAPATH)prefs
 	cp komi $(BINPATH)
 	chmod 755 $(BINPATH)komi
 	install -d $(MANPATH)

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH KOMI 6 "June 15, 2004"
+.TH KOMI 6 "June 20, 2004"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -28,7 +28,8 @@ game.
 
 .SH PLAYING
 Using the left and right arrow keys you may guide Komi the space frog from left to right across the bottom of the screen.
-Use the space bar to extend his long tongue and capture the floating orange prizes, whilst avoiding the predators.
+Left-handers can use Q and W.
+Use the space bar to extend Komi's long tongue and capture the floating orange prizes, whilst avoiding the predators.
 
 .SH OPTIONS
 The following command line options are supported:
@@ -46,12 +47,6 @@ Use a faster drawing method. Forces starfield to be off.
 Run the game in fullscreen mode, rather than in a window of its own.
 
 .TP
-\fB\-\-hog\fR
-Allow 
-.B komi
-to hog CPU which may reduce jerkiness.
-
-.TP
 \fB\-\-nosound\fR
 .Sp
 Disable all sound effects.
@@ -63,6 +58,10 @@ Disable the starfield simulation in the background of the game.
 .TP
 \fB\-\-resetprefs\fR
 Reset preferences file (which includes the high score).
+
+.TP
+\fB\-\-shuffle\fR
+Shuffle the order of the levels.
 
 .TP
 \fB\-\-copying\fR

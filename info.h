@@ -32,13 +32,12 @@ Komi options:\n\
                          so lower is faster)\n\
 \n\
   Technical options:\n\
-     --fastdraw         (experimental)\n\
+     --fastdraw         (fast drawing method for slow PCs)\n\
      --fullscreen\n\
-     --hog              (hog CPU, may reduce jerkiness)\n\
      --nosound\n\
      --nostars          (turn the starfield off)\n\
-     --path directory/  (directory of data files)\n\
      --resetprefs       (reset prefs and high score)\n\
+     --shuffle          (shuffle levels randomly)\n\
 \n\
   Information:\n\
      --copying          (Komi is under the GNU GPL)\n\

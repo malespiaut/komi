@@ -11,8 +11,9 @@ void loadsprites (void)
    loadsprite(&tonguemask_sprite, filepath, "sprites_tonguemask.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    loadsprite(&pickupmask_sprite, filepath, "sprites_pickupmask.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    
-   loadsprite(&coin_sprite, filepath, "sprites_coin.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
-   loadsprite(&diamond_sprite, filepath, "sprites_diamond.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
+   // To make things slightly easier, the coins/diamonds don't get black set as a no-collide colour here...
+   loadsprite(&coin_sprite, filepath, "sprites_coin.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 255, 255, 255);
+   loadsprite(&diamond_sprite, filepath, "sprites_diamond.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 255, 255, 255);
    
    loadsprite(&generator_sprite, filepath, "sprites_generator.bmp", SPRITE_SIZE, SPRITE_SIZE, 255, 255, 255, 0, 0, 0);
    
@@ -67,8 +68,10 @@ void loadsprites (void)
    
    loadsprite(&maintitle_title, filepath, "titles_title.bmp", 288, 80, 0, 0, 0, 0, 0, 0);
    loadsprite(&bolts_title, filepath, "titles_bolts.bmp", 152, 24, 0, 0, 0, 0, 0, 0);
-   loadsprite(&start_title, filepath, "titles_start.bmp", 240, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&start_title, filepath, "titles_start.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&quit_title, filepath, "titles_quit.bmp", 96, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&start2_title, filepath, "titles_start2.bmp", 224, 48, 0, 0, 0, 0, 0, 0);
+   loadsprite(&quit2_title, filepath, "titles_quit2.bmp", 96, 48, 0, 0, 0, 0, 0, 0);
    loadsprite(&gpl_title, filepath, "titles_gpl.bmp", 480, 112, 0, 0, 0, 0, 0, 0);
    loadsprite(&speed_title, filepath, "titles_speed.bmp", 136, 48, 0, 0, 0, 0, 0, 0);
    
@@ -95,6 +98,7 @@ void loadsounds (void)
    loadsound(&lightningwarning_sound, filepath, "sounds_lightningwarning.wav");
    loadsound(&pause_sound, filepath, "sounds_pause.wav");
    loadsound(&powerup_sound, filepath, "sounds_powerup.wav");
+   loadsound(&screenshot_sound, filepath, "sounds_screenshot.wav");
    loadsound(&shoot_sound, filepath, "sounds_shoot.wav");
    loadsound(&stick_sound, filepath, "sounds_stick.wav");
    loadsound(&unfreezewarning_sound, filepath, "sounds_unfreezewarning.wav");

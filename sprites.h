@@ -31,16 +31,16 @@ int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct spr
 {
    int leftx1, topy1, leftx2, topy2;
 
-   leftx1 = x1 - sprite1->width / 2;
-   topy1 = y1 - sprite1->height / 2;
+   leftx1 = x1 - sprite1->pixelmap->w / 2;
+   topy1 = y1 - sprite1->pixelmap->h / 2;
    
-   leftx2 = x2 - sprite2->width / 2;
-   topy2 = y2 - sprite2->height / 2;
+   leftx2 = x2 - sprite2->pixelmap->w / 2;
+   topy2 = y2 - sprite2->pixelmap->h / 2;
    
-   if (leftx1 > leftx2 + sprite2->width) return 0;
-   if (leftx1 + sprite1->width < leftx2) return 0;
-   if (topy1 > topy2 + sprite2->height) return 0;
-   if (topy1 + sprite1->height < topy2) return 0;
+   if (leftx1 > leftx2 + sprite2->pixelmap->w) return 0;
+   if (leftx1 + sprite1->pixelmap->w < leftx2) return 0;
+   if (topy1 > topy2 + sprite2->pixelmap->h) return 0;
+   if (topy1 + sprite1->pixelmap->h < topy2) return 0;
    
    return bitmask_overlap(sprite1->collisionmask, sprite2->collisionmask, leftx2 - leftx1, topy2 - topy1);
 }
@@ -48,17 +48,14 @@ int sprite_collision (struct sprite_struct * sprite1, int x1, int y1, struct spr
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Set sprite's width, height and allocate memory for pixels and visibility mask.
+// Set sprite's width, height; and create SDL_Surface; and mallocate visibility mask.
 
 void init_spriteimagemap(struct sprite_struct * thesprite, int width, int height)
 {
-   thesprite->width = width;
-   thesprite->height = height;
-   thesprite->pixels = (unsigned char *) malloc(thesprite->width * thesprite->height * 3 * sizeof(char));
-   thesprite->visible = (unsigned char *) malloc(thesprite->width * thesprite->height * sizeof(char));
-   if (thesprite->pixels == NULL || thesprite->visible == NULL)
+   thesprite->pixelmap = SDL_CreateRGBSurface(SDL_SRCCOLORKEY, width, height, 24, 0, 0, 0, 0);
+   if (thesprite->pixelmap == NULL)
    {
-      printf("   Memory allocation for sprites failed. Quitting.\n");
+      printf("Creation of SDL_Surface for sprite failed. Quitting.\n");
       cleanexit(1);
    }
    return;
@@ -71,27 +68,31 @@ void init_spriteimagemap(struct sprite_struct * thesprite, int width, int height
 
 void drawsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int centrex, int centrey)
 {
-   int x, y;
    int leftx, topy;
    
-   leftx = centrex - thesprite->width / 2;
-   topy = centrey - thesprite->height / 2;
+   SDL_Rect srcrect;
+   SDL_Rect destrect;
+   
+   leftx = centrex - thesprite->pixelmap->w / 2;
+   topy = centrey - thesprite->pixelmap->h / 2;
+   
+   destrect.x = leftx;
+   destrect.y = topy;
+   destrect.w = thesprite->pixelmap->w;
+   destrect.h = thesprite->pixelmap->h;
+   
+   srcrect.x = 0;
+   srcrect.y = 0;
+   srcrect.w = thesprite->pixelmap->w;
+   srcrect.h = thesprite->pixelmap->h;
    
    if (fastdraw)
    {
-      updaterectsarray(leftx, topy, thesprite->width, thesprite->height);
+      updaterectsarray(leftx, topy, thesprite->pixelmap->w, thesprite->pixelmap->h);
    }
-   
-   for (x = 0; x < thesprite->width; x++)
-   {
-      for (y = 0; y < thesprite->height; y++)
-      {
-         if (thesprite->visible[x + (y * thesprite->width)])
-	 {
-	    setrgb(screen, leftx + x, topy + y, thesprite->pixels[(x * 3) + (y * thesprite->width * 3)], thesprite->pixels[(x * 3) + (y * thesprite->width * 3) + 1], thesprite->pixels[(x * 3) + (y * thesprite->width * 3) + 2]);
-	 }
-      }
-   }
+
+   SDL_BlitSurface(thesprite->pixelmap, &srcrect, virtue, &destrect);
+
    return;
 }
 
@@ -102,27 +103,23 @@ void drawsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int cen
 
 void clearsprite (struct sprite_struct * thesprite, SDL_Surface * screen, int centrex, int centrey)
 {
-   int x, y;
    int leftx, topy;
+   SDL_Rect therect;
    
-   leftx = centrex - thesprite->width / 2;
-   topy = centrey - thesprite->height / 2;
+   leftx = centrex - thesprite->pixelmap->w / 2;
+   topy = centrey - thesprite->pixelmap->h / 2;
+   
+   therect.x = leftx;
+   therect.y = topy;
+   therect.w = thesprite->pixelmap->w;
+   therect.h = thesprite->pixelmap->h;
    
    if (fastdraw)
    {
-      updaterectsarray(leftx, topy, thesprite->width, thesprite->height);
+      updaterectsarray(leftx, topy, thesprite->pixelmap->w, thesprite->pixelmap->h);
    }
    
-   for (x = 0; x < thesprite->width; x++)
-   {
-      for (y = 0; y < thesprite->height; y++)
-      {
-         if (thesprite->visible[x + (y * thesprite->width)])
-	 {
-	    setrgb(screen, leftx + x, topy + y, 0, 0, 0);
-	 }
-      }
-   }
+   SDL_FillRect(screen, &therect, SDL_MapRGB(screen->format, 0, 0, 0));
    return;
 }
 
@@ -141,6 +138,7 @@ void loadsprite (struct sprite_struct * thesprite, char * directory, char * file
 
    FILE * infile;
    int x, y;
+   int r, g, b;
    char fullpath[1024];
    
    if (strlen(directory) + strlen(filename) >= sizeof(fullpath))    // Check for buffer overflow on fullpath
@@ -179,30 +177,31 @@ void loadsprite (struct sprite_struct * thesprite, char * directory, char * file
       cleanexit(1);
    }
    
-   thesprite->width = width;
-   thesprite->height = height;
-   
    fseek(infile, 54, SEEK_SET);    // The start of the actual data is at the 55th byte of a BMP file...
+
+   if (SDL_MUSTLOCK(thesprite->pixelmap)) SDL_LockSurface(thesprite->pixelmap);
 
    for (y = height - 1; y >= 0; y--)
    {
       for (x = 0; x <= width - 1; x++)
       {
-         thesprite->pixels[(x * 3) + (y * width * 3) + 2] = (unsigned char) getc(infile);
-	 thesprite->pixels[(x * 3) + (y * width * 3) + 1] = (unsigned char) getc(infile);
-	 thesprite->pixels[(x * 3) + (y * width * 3)] = (unsigned char) getc(infile);
-	 if (thesprite->pixels[(x * 3) + (y * width * 3)] == hider && thesprite->pixels[(x * 3) + (y * width * 3) + 1] == hideg && thesprite->pixels[(x * 3) + (y * width * 3) + 2] == hideb)
+         b = getc(infile);
+	 g = getc(infile);
+	 r = getc(infile);
+	 setrgb(thesprite->pixelmap, x, y, r, g, b);
+	 if (r != hider || g != hideg || b != hideb)
 	 {
-	    thesprite->visible[x + (y * width)] = 0;
-	 } else {
-	    thesprite->visible[x + (y * width)] = 1;
-	    if (thesprite->pixels[(x * 3) + (y * width * 3)] != nocollider || thesprite->pixels[(x * 3) + (y * width * 3) + 1] != nocollideg || thesprite->pixels[(x * 3) + (y * width * 3) + 2] != nocollideb)
+	    if (r != nocollider || g != nocollideg || b != nocollideb)
 	    {
 	       bitmask_setbit(thesprite->collisionmask, x, y);
 	    }
 	 }
       }
    }
+   
+   if (SDL_MUSTLOCK(thesprite->pixelmap)) SDL_UnlockSurface(thesprite->pixelmap);
+   
+   SDL_SetColorKey(thesprite->pixelmap, SDL_SRCCOLORKEY, SDL_MapRGB(thesprite->pixelmap->format, hider, hideg, hideb));
    
    fclose(infile);
    return;
