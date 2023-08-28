@@ -1,6 +1,5 @@
 /* info.h */
 
-
 #define INFO_GPL_BRIEF "\
 Copyright Allan Crossman, 2004\n\
 Uses SDL library and Ulf Ekstrom's Bitmask functions\n\
@@ -22,7 +21,6 @@ You should have received a copy of the GNU General Public\n\
 License along with this program; if not, write to the Free\n\
 Software Foundation, Inc., 59 Temple Place, Suite 330,\n\
 Boston, MA  02111-1307  USA\n\n"
-
 
 #define INFO_HELP "\
 Komi options:\n\
@@ -48,25 +46,27 @@ Komi options:\n\
      Use Komi's tongue with spacebar.\n\
      Capture all coins and diamonds.\n\n"
 
-
-void printcopyinfo (void)
+void
+printcopyinfo(void)
 {
-   fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
-   fprintf(stdout, INFO_GPL_BRIEF);
-   return;
+  fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
+  fprintf(stdout, INFO_GPL_BRIEF);
+  return;
 }
 
-void printhelp (void)
+void
+printhelp(void)
 {
-   fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
-   fprintf(stdout, "Compiled to use data in %s\n\n", filepath);
-   fprintf(stdout, INFO_HELP);
-   return;
+  fprintf(stdout, "\nKomi the Space Frog %s\n", VERSION);
+  fprintf(stdout, "Compiled to use data in %s\n\n", filepath);
+  fprintf(stdout, INFO_HELP);
+  return;
 }
 
-void printversion (void)
+void
+printversion(void)
 {
-   fprintf(stdout, "Komi the Space Frog %s\n", VERSION);
-   fprintf(stdout, "Compiled to use data in %s\n", filepath);
-   return;
+  fprintf(stdout, "Komi the Space Frog %s\n", VERSION);
+  fprintf(stdout, "Compiled to use data in %s\n", filepath);
+  return;
 }

@@ -20,4 +20,4 @@ int FireKey2 = SDLK_RETURN;
 int PauseKey = SDLK_p;
 int ScreenshotKey = SDLK_F12;
 
-int LevelSkip = SDLK_KP_PLUS;    // Only works if cheats enabled.
+int LevelSkip = SDLK_KP_PLUS; // Only works if cheats enabled.
