@@ -24,12 +24,6 @@ Speed Problems
 
 The game may be too fast or too slow. You can adjust the speed by clicking on the speed bar in the title screen.
 
-If things are too slow even on the fastest setting, as a last resort, try doing:
-
-  komi --fastdraw
-  
-The "fastdraw" option is experimental but should update only those parts of the screen that need updating. It forces stars to be off.
-
 The game runs fine on my computer, yet runs really slowly on a supposedly faster machine that I also have access to. The speed difference is about 400 percent. After investigation, this seems to have something to do with the second machine having hyperthreading and runnning in SMP mode. If you're running Komi on a hyperthreaded machine, I want to hear about your results.
 
 

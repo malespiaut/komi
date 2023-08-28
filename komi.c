@@ -61,10 +61,6 @@ main(int argc, char* argv[])
 {
   int n;
 
-  // Just check here that MAXRECTS has been declared to be big enough (else it might crash in --fastdraw mode)
-  // Note that each sprite uses 2 update-rects - one for it's current position, and one for it's old one.
-  assert(MAXRECTS > (MAX_ENEMIES * 2) + (MAX_COINS * 2) + (MAX_DIAMONDS * 2) + (MAX_ENEMYSHOTS * 2) + (MAX_FRIENDLYSHOTS * 2) + 50);
-
   setprefsdir(); // Determine the directory where prefs are saved.
 
   for (n = 1; n < argc; n++)
@@ -104,11 +100,6 @@ main(int argc, char* argv[])
     if (strcmp(argv[n], "--nomusic") == 0)
     {
       nomusic = 1;
-    }
-    if (strcmp(argv[n], "--fastdraw") == 0)
-    {
-      fastdraw = 1;
-      nostarsflag = 1;
     }
     if (strcmp(argv[n], "--hog") == 0)
     {
@@ -199,14 +190,21 @@ main(int argc, char* argv[])
     }
   }
 
-  if (fullscreen == 0)
+  int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
+  if (fullscreen)
   {
-    virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT);
+    flags |= SDL_WINDOW_FULLSCREEN;
   }
-  else
-  {
-    virtue = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_ANYFORMAT | SDL_FULLSCREEN);
-  }
+
+  window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, flags);
+
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+  SDL_RenderSetLogicalSize(renderer, WIDTH, HEIGHT);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+
+  virtue = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0, 0, 0, 0);
 
   if (virtue == NULL)
   {
@@ -225,15 +223,21 @@ main(int argc, char* argv[])
 
   loadsprites();
 
-  if (gfxdetails)
-  {
-    printgfxdetails();
-  }
-
   menu();
 
   cleanexit(0);
   return 0; // Will never get here.
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void
+present_frame(void)
+{
+  SDL_UpdateTexture(texture, NULL, virtue->pixels, sizeof(Uint32) * WIDTH);
+  SDL_RenderClear(renderer);
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+  SDL_RenderPresent(renderer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -442,7 +446,7 @@ playlevel(void)
   mousemap.button = 0;
 
   cls(virtue, 0, 0, 0);
-  SDL_UpdateRect(virtue, 0, 0, 0, 0);
+  present_frame();
   updatetitlebar();
 
   if (lives == 1 && givelastlifewarning && fullscreen)
@@ -527,15 +531,7 @@ playlevel(void)
 
     movesprites();
     drawsprites();
-
-    if (fastdraw)
-    {
-      SDL_UpdateRects(virtue, rects, updaterect);
-    }
-    else
-    {
-      SDL_UpdateRect(virtue, 0, 0, 0, 0);
-    }
+    present_frame();
     rects = 0;
 
     if (invincible == 0)
@@ -3158,7 +3154,7 @@ drawmenu(int highlight_start, int highlight_quit, int highlight_shuffle)
   drawsprite(&speed_title, virtue, SPEEDTITLE_X, SPEEDTITLE_Y);
   drawspeedrect();
 
-  SDL_UpdateRect(virtue, 0, 0, 0, 0);
+  present_frame();
   return;
 }
 
@@ -3207,7 +3203,7 @@ checkspeedadjust(void)
       delay = LONGESTDELAY;
     saveprefs(prefsdir, PREFSNAME);
     drawspeedrect();
-    SDL_UpdateRect(virtue, 0, 0, 0, 0);
+    present_frame();
   }
   return;
 }
@@ -3456,7 +3452,7 @@ fadeout(void) // Not so much a fade as a series of black lines...
     {
       if (SDL_MUSTLOCK(virtue))
         SDL_UnlockSurface(virtue);
-      SDL_UpdateRect(virtue, 0, 0, 0, 0);
+      present_frame();
       SDL_Delay(5);
       manageevents();
       if (keymap.escape)
@@ -3475,7 +3471,7 @@ fadeout(void) // Not so much a fade as a series of black lines...
     {
       if (SDL_MUSTLOCK(virtue))
         SDL_UnlockSurface(virtue);
-      SDL_UpdateRect(virtue, 0, 0, 0, 0);
+      present_frame();
       SDL_Delay(5);
       manageevents();
       if (keymap.escape)
@@ -3490,7 +3486,7 @@ fadeout(void) // Not so much a fade as a series of black lines...
   if (SDL_MUSTLOCK(virtue))
     SDL_UnlockSurface(virtue);
 
-  SDL_UpdateRect(virtue, 0, 0, 0, 0);
+  present_frame();
   return;
 }
 
@@ -3502,7 +3498,7 @@ updatetitlebar(void)
   char thestring[TEXTBUFFERSIZE];
 
   sprintf(thestring, "Komi  -  Level: %d  -  Score: %d  -  Lives: %d", level, score, lives);
-  SDL_WM_SetCaption(thestring, NULL);
+  SDL_SetWindowTitle(window, thestring);
   return;
 }
 
@@ -3998,7 +3994,7 @@ setmaintitlebar(void)
   char thestring[TEXTBUFFERSIZE];
 
   sprintf(thestring, "Komi %s  -  High Score: %d  -  Last Score: %d", VERSION, highscore, lastscore);
-  SDL_WM_SetCaption(thestring, NULL);
+  SDL_SetWindowTitle(window, thestring);
   return;
 }
 
@@ -4117,42 +4113,5 @@ setprefsdir(void) // Try to get a sensible directory to save prefs to.
   }
 
   // No variables - just return. prefsdir will be whatever it was set to in declarations.h
-  return;
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-
-void
-printgfxdetails(void)
-{
-  fprintf(stdout, "\n");
-  if ((virtue->flags & SDL_HWSURFACE) == SDL_HWSURFACE)
-  {
-    fprintf(stdout, "Screen is in video memory.\n");
-  }
-  else
-  {
-    fprintf(stdout, "Screen is in system memory.\n");
-  }
-  fprintf(stdout, "Screen is at %d bits per pixel.\n", virtue->format->BitsPerPixel);
-  if ((virtue->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF)
-  {
-    fprintf(stdout, "Screen has double-buffering enabled.\n");
-  }
-  else
-  {
-    fprintf(stdout, "Screen does not have double-buffering enabled.\n");
-  }
-  fprintf(stdout, "\n");
-  if ((komi_sprite.pixelmap->flags & SDL_HWSURFACE) == SDL_HWSURFACE)
-  {
-    fprintf(stdout, "Sprites are in video memory.\n");
-  }
-  else
-  {
-    fprintf(stdout, "Sprites are in system memory.\n");
-  }
-  fprintf(stdout, "Sprites are at %d bits per pixel.\n", komi_sprite.pixelmap->format->BitsPerPixel);
-  fprintf(stdout, "\n");
   return;
 }

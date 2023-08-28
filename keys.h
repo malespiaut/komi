@@ -4,12 +4,12 @@
 
 // You can use any of these keys to go left...
 int LeftKey1 = SDLK_LEFT;
-int LeftKey2 = SDLK_KP4;
+int LeftKey2 = SDLK_KP_4;
 int LeftKey3 = SDLK_q;
 
 // You can use any of these keys to go right...
 int RightKey1 = SDLK_RIGHT;
-int RightKey2 = SDLK_KP6;
+int RightKey2 = SDLK_KP_6;
 int RightKey3 = SDLK_w;
 
 // Extend the tongue...

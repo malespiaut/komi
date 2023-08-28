@@ -337,11 +337,13 @@ struct level_struct
 /* -------------------------------------------------------------------------- */
 // Globals...
 
+SDL_Window* window;
+SDL_Renderer* renderer;
+SDL_Texture* texture;
 SDL_Surface* virtue; // The SDL surface that we draw to.
 SDL_Event event;     // For getting the last event.
 
-SDL_Rect updaterect[MAXRECTS]; // Array of rectanges used if --fastdraw option is on. What areas to redraw this frame.
-int rects;                     // Number of rectanges to redraw this frame. Passed to SDL_UpdateRects().
+int rects; // Number of rectanges to redraw this frame. Passed to SDL_UpdateRects().
 
 int level; // Current level.
 int lives; // Current lives.
@@ -358,7 +360,6 @@ int invincible = 0;
 int shuffle = 0;
 int algorithmicenemies = 0;
 int fullscreen = 0;
-int fastdraw = 0;
 int gfxdetails = 0;
 
 int gotdelayarg = 0; // Flag raised if "--delay" is used; prevents delay being read from prefs file.

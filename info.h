@@ -30,7 +30,6 @@ Komi options:\n\
                          so lower is faster)\n\
 \n\
   Technical options:\n\
-     --fastdraw         (fast drawing method for slow PCs)\n\
      --fullscreen       (use whole screen instead of window)\n\
      --nosound          (don't use any sounds)\n\
      --nostars          (turn the starfield off)\n\

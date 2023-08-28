@@ -254,11 +254,6 @@ frect(SDL_Surface* bitmapstruct, int x1, int y1, int x2, int y2, int red, int gr
 
   SDL_FillRect(bitmapstruct, &therect, SDL_MapRGB(bitmapstruct->format, red, green, blue));
 
-  if (fastdraw)
-  {
-    updaterectsarray(x1, y1, x2 - x1, y2 - y1);
-  }
-
   return;
 }
 
@@ -266,39 +261,5 @@ void
 cls(SDL_Surface* bitmapstruct, int red, int green, int blue)
 {
   SDL_FillRect(bitmapstruct, NULL, SDL_MapRGB(bitmapstruct->format, red, green, blue));
-  return;
-}
-
-void
-updaterectsarray(int leftx, int topy, int width, int height)
-{
-  int rightx;
-  int bottomy;
-
-  assert(rects >= 0 && rects < MAXRECTS);
-
-  rightx = leftx + width;  // rightx is actually one pixel past the rightmost pixel.
-  bottomy = topy + height; // and bottomy is one past the bottommost pixel
-
-  if (leftx < 0)
-    leftx = 0;
-  if (topy < 0)
-    topy = 0;
-  if (rightx > WIDTH)
-    rightx = WIDTH;
-  if (bottomy > HEIGHT)
-    bottomy = HEIGHT;
-
-  if (leftx < rightx && topy < bottomy)
-  {
-    width = rightx - leftx;
-    height = bottomy - topy;
-    updaterect[rects].x = leftx;
-    updaterect[rects].y = topy;
-    updaterect[rects].w = width;
-    updaterect[rects].h = height;
-    rects++;
-  }
-
   return;
 }

@@ -1,5 +1,6 @@
 // From Komi.c
 
+void present_frame(void);
 void menu(void);
 void game(void);
 int playlevel(void);
@@ -44,7 +45,6 @@ void musicdone(void);
 void playnextsong(void);
 void shufflelevels(void);
 void setprefsdir(void);
-void printgfxdetails(void);
 void doelectricity(void);
 void drawelectricity(int x1, int y, int x2, int electraflag);
 int electraboltsdeath(void);
@@ -90,4 +90,3 @@ void putpixel(SDL_Surface* surface, int x, int y, Uint32 pixel);
 void line(SDL_Surface* bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
 void frect(SDL_Surface* bitmapstruct, int x1, int y1, int x2, int y2, int red, int green, int blue);
 void cls(SDL_Surface* bitmapstruct, int red, int green, int blue);
-void updaterectsarray(int leftx, int topy, int width, int height);

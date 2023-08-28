@@ -56,7 +56,7 @@ sprite_collision(struct sprite_struct* sprite1, int x1, int y1, struct sprite_st
 void
 init_spriteimagemap(struct sprite_struct* thesprite, int width, int height)
 {
-  thesprite->pixelmap = SDL_CreateRGBSurface(SDL_SRCCOLORKEY, width, height, 24, 0, 0, 0, 0);
+  thesprite->pixelmap = SDL_CreateRGBSurface(0, width, height, 24, 0, 0, 0, 0);
   if (thesprite->pixelmap == NULL)
   {
     printf("Creation of SDL_Surface for sprite failed. Quitting.\n");
@@ -90,11 +90,6 @@ drawsprite(struct sprite_struct* thesprite, SDL_Surface* screen, int centrex, in
   srcrect.w = thesprite->pixelmap->w;
   srcrect.h = thesprite->pixelmap->h;
 
-  if (fastdraw)
-  {
-    updaterectsarray(leftx, topy, thesprite->pixelmap->w, thesprite->pixelmap->h);
-  }
-
   SDL_BlitSurface(thesprite->pixelmap, &srcrect, screen, &destrect);
 
   return;
@@ -117,11 +112,6 @@ clearsprite(struct sprite_struct* thesprite, SDL_Surface* screen, int centrex, i
   therect.y = topy;
   therect.w = thesprite->pixelmap->w;
   therect.h = thesprite->pixelmap->h;
-
-  if (fastdraw)
-  {
-    updaterectsarray(leftx, topy, thesprite->pixelmap->w, thesprite->pixelmap->h);
-  }
 
   SDL_FillRect(screen, &therect, SDL_MapRGB(screen->format, 0, 0, 0));
   return;
@@ -210,7 +200,7 @@ loadsprite(struct sprite_struct* thesprite, char* directory, char* filename, int
   if (SDL_MUSTLOCK(thesprite->pixelmap))
     SDL_UnlockSurface(thesprite->pixelmap);
 
-  SDL_SetColorKey(thesprite->pixelmap, SDL_SRCCOLORKEY, SDL_MapRGB(thesprite->pixelmap->format, hider, hideg, hideb));
+  SDL_SetColorKey(thesprite->pixelmap, SDL_TRUE, SDL_MapRGB(thesprite->pixelmap->format, hider, hideg, hideb));
 
   fclose(infile);
   return;
